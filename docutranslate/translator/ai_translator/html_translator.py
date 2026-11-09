@@ -65,7 +65,7 @@ class HtmlTranslator(AiTranslator):
                     percent = 30 + int((current / total) * 60)
                     self.progress_tracker.update(
                         percent=percent,
-                        message=f"正在翻译 ({current}/{total})"
+                        message=f"Đang dịch ({current}/{total})"
                     )
 
             agent_config = SegmentsTranslateAgentConfig(
@@ -140,7 +140,7 @@ class HtmlTranslator(AiTranslator):
     def _after_translate(self, soup: BeautifulSoup, translatable_items: list,
                          translated_texts: list[str], original_texts: list[str]) -> bytes:
         if len(translatable_items) != len(translated_texts):
-            self.logger.error("翻译前后的文本片段数量不匹配 (%d vs %d)，跳过写入操作以防损坏文件。",
+            self.logger.error("Số đoạn văn bản trước và sau khi dịch không khớp (%d vs %d), bỏ qua thao tác ghi để tránh làm hỏng tệp.",
                               len(translatable_items), len(translated_texts))
             return soup.encode('utf-8')
 
@@ -223,7 +223,7 @@ class HtmlTranslator(AiTranslator):
     def translate(self, document: Document) -> Self:
         soup, translatable_items, original_texts = self._pre_translate(document)
         if not translatable_items:
-            self.logger.info("\nHTML文件中没有找到符合安全规则的可翻译内容。")
+            self.logger.info("\nKhông tìm thấy nội dung có thể dịch phù hợp quy tắc an toàn trong tệp HTML.")
             document.content = soup.encode('utf-8')
             return self
 
@@ -249,7 +249,7 @@ class HtmlTranslator(AiTranslator):
         soup, translatable_items, original_texts = await asyncio.to_thread(self._pre_translate, document)
 
         if not translatable_items:
-            self.logger.info("\nHTML文件中没有找到符合安全规则的可翻译内容。")
+            self.logger.info("\nKhông tìm thấy nội dung có thể dịch phù hợp quy tắc an toàn trong tệp HTML.")
             document.content = await asyncio.to_thread(soup.encode, 'utf-8')
             return self
 

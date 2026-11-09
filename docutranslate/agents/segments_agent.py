@@ -69,7 +69,7 @@ def get_original_segments(prompt: str):
     if match:
         return match.group(1)
     else:
-        raise ValueError("无法从prompt中提取初始文本")
+        raise ValueError("Không thể trích xuất văn bản gốc từ prompt")
 
 
 def get_target_segments(result: str):
@@ -196,11 +196,11 @@ class SegmentsTranslateAgent(Agent):
         try:
             original_segments = get_original_segments(origin_prompt)
         except ValueError as e:
-            raise AgentResultError(f"无法从prompt中提取初始文本: {e}")
+            raise AgentResultError(f"Không thể trích xuất văn bản gốc từ prompt: {e}")
         repaired_result = get_target_segments(result)  # 直接返回解析后的 list 或 dict
         if not repaired_result:
             if original_segments.strip() != "":
-                raise AgentResultError("result为空值但原文不为空")
+                raise AgentResultError("result rỗng nhưng văn bản gốc không rỗng")
             return {}
 
         try:
@@ -223,7 +223,7 @@ class SegmentsTranslateAgent(Agent):
                 repaired_array = flatten_and_filter(repaired_result)
             else:
                 raise AgentResultError(
-                    "Agent返回结果不是array的json形式, "
+                    "Agent trả về kết quả không phải dạng json array, "
                     f"type={type(repaired_result).__name__}, chars={len(result)}"
                 )
 
@@ -240,7 +240,7 @@ class SegmentsTranslateAgent(Agent):
             # 只对有 id 的元素排序
             sorted_result = sorted([x for x in repaired_array if isinstance(x, dict) and "id" in x], key=lambda x: x.get("id", ""))
             if sorted_original == sorted_result:
-                raise AgentResultError("翻译结果与原文完全相同，疑似翻译失败，将进行重试。")
+                raise AgentResultError("Kết quả dịch hoàn toàn giống văn bản gốc, nghi ngờ dịch thất bại, sẽ thử lại.")
 
             # 转换为 dict 便于处理
             result_dict = {item["id"]: item["t"] for item in repaired_array if "id" in item and "t" in item}
@@ -257,7 +257,7 @@ class SegmentsTranslateAgent(Agent):
 
                 # 只保留原文有的ID，丢弃多余的ID（可能是模型幻觉）
                 if extra_keys:
-                    logger.warning(f"检测到多余的ID（可能是模型幻觉，已丢弃）: {extra_keys}")
+                    logger.warning(f"Phát hiện ID thừa (có thể do mô hình ảo giác, đã loại bỏ): {extra_keys}")
 
                 # 合并已翻译的部分和缺失的部分
                 for key in common_keys:
@@ -271,8 +271,8 @@ class SegmentsTranslateAgent(Agent):
 
                 # 如果有缺失的ID，抛出部分结果异常
                 if missing_keys:
-                    logger.warning(f"缺失的ID: {missing_keys}")
-                    raise PartialAgentResultError("ID不匹配，触发重试", partial_result=final_chunk, append_prompt=f"\nBe careful not to omit any IDs from the input; do not combine sentences when translating.\n")
+                    logger.warning(f"ID bị thiếu: {missing_keys}")
+                    raise PartialAgentResultError("ID không khớp, kích hoạt thử lại", partial_result=final_chunk, append_prompt=f"\nBe careful not to omit any IDs from the input; do not combine sentences when translating.\n")
 
             # 如果ID完全匹配（理想情况），正常返回
             for key, value in result_dict.items():
@@ -282,7 +282,7 @@ class SegmentsTranslateAgent(Agent):
 
         except (RuntimeError, JSONDecodeError) as e:
             # 对于JSON解析等硬性错误，继续抛出普通ValueError
-            raise AgentResultError(f"结果处理失败: {e.__repr__()}")
+            raise AgentResultError(f"Xử lý kết quả thất bại: {e.__repr__()}")
 
     def _error_result_handler(self, origin_prompt: str, logger: Logger):
         """
@@ -292,7 +292,7 @@ class SegmentsTranslateAgent(Agent):
         try:
             original_segments = get_original_segments(origin_prompt)
         except ValueError as e:
-            logger.error(f"无法从prompt中提取初始文本: {e}")
+            logger.error(f"Không thể trích xuất văn bản gốc từ prompt: {e}")
             return {}
         if original_segments == "":
             return {}
@@ -304,7 +304,7 @@ class SegmentsTranslateAgent(Agent):
             return original_chunk
         except (RuntimeError, JSONDecodeError):
             logger.error(
-                "原始prompt不是有效的json格式: chars=%d",
+                "prompt gốc không phải định dạng json hợp lệ: chars=%d",
                 len(original_segments),
             )
             # 如果原始prompt本身也无效，返回一个清晰的错误对象
@@ -323,7 +323,7 @@ class SegmentsTranslateAgent(Agent):
             try:
                 if not isinstance(chunk, dict):
                     self.logger.warning(
-                        "接收到的chunk不是有效字典，已跳过: type=%s",
+                        "chunk nhận được không phải dict hợp lệ, đã bỏ qua: type=%s",
                         type(chunk).__name__,
                     )
                     continue
@@ -331,13 +331,13 @@ class SegmentsTranslateAgent(Agent):
                     if key in indexed_translated:
                         indexed_translated[key] = val
                     else:
-                        self.logger.warning(f"在结果chunk中发现未知键 '{key}'，已忽略。")
+                        self.logger.warning(f"Phát hiện khóa không xác định '{key}' trong chunk kết quả, đã bỏ qua.")
             except (AttributeError, TypeError) as e:
                 self.logger.error(
-                    "处理chunk时发生类型或属性错误，已跳过: %r", e
+                    "Lỗi kiểu hoặc thuộc tính khi xử lý chunk, đã bỏ qua: %r", e
                 )
             except Exception as e:
-                self.logger.error(f"处理chunk时发生未知错误: {e.__repr__()}")
+                self.logger.error(f"Lỗi không xác định khi xử lý chunk: {e.__repr__()}")
 
         # 重建最终列表
         result = []
@@ -366,7 +366,7 @@ class SegmentsTranslateAgent(Agent):
             try:
                 if not isinstance(chunk, dict):
                     self.logger.error(
-                        "接收到的chunk不是有效字典，已跳过: type=%s",
+                        "chunk nhận được không phải dict hợp lệ, đã bỏ qua: type=%s",
                         type(chunk).__name__,
                     )
                     continue
@@ -375,13 +375,13 @@ class SegmentsTranslateAgent(Agent):
                         # 此处不再需要 str(val)，因为 _result_handler 已经处理好了
                         indexed_translated[key] = val
                     else:
-                        self.logger.warning(f"在结果chunk中发现未知键 '{key}'，已忽略。")
+                        self.logger.warning(f"Phát hiện khóa không xác định '{key}' trong chunk kết quả, đã bỏ qua.")
             except (AttributeError, TypeError) as e:
                 self.logger.error(
-                    "处理chunk时发生类型或属性错误，已跳过: %r", e
+                    "Lỗi kiểu hoặc thuộc tính khi xử lý chunk, đã bỏ qua: %r", e
                 )
             except Exception as e:
-                self.logger.error(f"处理chunk时发生未知错误: {e.__repr__()}")
+                self.logger.error(f"Lỗi không xác định khi xử lý chunk: {e.__repr__()}")
 
         # 重建最终列表
         result = []

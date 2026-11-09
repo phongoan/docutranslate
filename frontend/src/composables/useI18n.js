@@ -1,7 +1,7 @@
 import { ref } from 'vue';
 
 export function useI18n() {
-    const currentLang = ref(localStorage.getItem('ui_language') || 'zh');
+    const currentLang = ref(localStorage.getItem('ui_language') || 'vi');
     const i18nData = ref({});
 
     const t = (k, params) => {
@@ -29,29 +29,29 @@ export function useI18n() {
 
     const loadI18n = async () => {
         try {
-            const lang = currentLang.value || 'zh';
+            const lang = currentLang.value || 'vi';
             const res = await fetch(`/static/i18n/${lang}.json`);
             i18nData.value = await res.json();
         } catch (e) {
             // Fallback defaults
             i18nData.value = {
-                pageTitle: "DocuTranslate",
-                tutorialBtn: "教程",
-                projectContributeBtn: "项目协作",
-                workflowTitle: "选择工作流",
-                autoWorkflowLabel: "自动选择工作流",
-                workflowOptionPptx: "PPTX 演示文稿",
-                pptxSettingsTitleText: "PPTX 设置",
-                mineruDeployServerUrlLabel: "Server URL",
-                mineruDeployApiKeyLabel: "本地服务 API Key（可选）",
-                mineruDeployApiKeyPlaceholder: "未启用鉴权时无需填写",
-                mineruDeployApiKeyHelp: "填写自建 MinerU 解析服务的访问密钥，非在线 Token 或翻译模型密钥。留空使用服务端环境变量；强制环境变量模式下以服务端配置为准。",
-                mineruDeployApiKeyShow: "显示密钥",
-                mineruDeployApiKeyHide: "隐藏密钥",
-                mineruDeployLangListLabel: "语言列表 (Pipeline模式)",
-                mineruDeployServerUrlPlaceholder: "http://127.0.0.1:30000",
-                mineruDeployParseMethodLabel: "解析方法 (Parse Method)",
-                mineruDeployTableEnableLabel: "表格识别 (Table Recognition)"
+                pageTitle: "DocuTranslate - Dịch tài liệu tương tác",
+                tutorialBtn: "Hướng dẫn",
+                projectContributeBtn: "Hợp tác dự án",
+                workflowTitle: "Chọn quy trình làm việc",
+                autoWorkflowLabel: "Tự động chọn quy trình",
+                workflowOptionPptx: "Thuyết trình PPTX (.pptx)",
+                pptxSettingsTitleText: "Tùy chọn dịch PPTX",
+                mineruDeployServerUrlLabel: "URL máy chủ",
+                mineruDeployApiKeyLabel: "API Key dịch vụ cục bộ (tùy chọn)",
+                mineruDeployApiKeyPlaceholder: "Để trống nếu không bật xác thực",
+                mineruDeployApiKeyHelp: "Khóa truy cập dịch vụ phân tích MinerU tự triển khai, khác với Token trực tuyến và khóa mô hình dịch. Để trống để dùng biến môi trường máy chủ. Cấu hình môi trường bắt buộc được ưu tiên.",
+                mineruDeployApiKeyShow: "Hiện khóa",
+                mineruDeployApiKeyHide: "Ẩn khóa",
+                mineruDeployLangListLabel: "Danh sách ngôn ngữ",
+                mineruDeployServerUrlPlaceholder: "Ví dụ: http://127.0.0.1:30000",
+                mineruDeployParseMethodLabel: "Phương pháp phân tích",
+                mineruDeployTableEnableLabel: "Nhận dạng bảng"
             };
         }
     };

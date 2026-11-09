@@ -77,14 +77,14 @@ translation_service: TranslationService = get_translation_service()
 _MAX_UPLOAD_BYTES = int(MAX_UPLOAD_MB * 1024 * 1024) if MAX_UPLOAD_MB and MAX_UPLOAD_MB > 0 else 0
 
 
-def _enforce_upload_limit(size_bytes: int, what: str = "文件") -> None:
-    """单进程内存受限，超过上限直接返回 413 而不是把进程拖到 OOM。"""
+def _enforce_upload_limit(size_bytes: int, what: str = "tệp") -> None:
+    """Bộ nhớ của một tiến trình có hạn; vượt giới hạn thì trả về 413 thay vì để tiến trình bị OOM."""
     if _MAX_UPLOAD_BYTES and size_bytes > _MAX_UPLOAD_BYTES:
         raise HTTPException(
             status_code=413,
             detail=(
-                f"{what}过大: {size_bytes / 1024 / 1024:.1f}MB 超过上限 "
-                f"{MAX_UPLOAD_MB:.0f}MB（可通过 DOCUTRANSLATE_MAX_UPLOAD_MB 调整）。"
+                f"{what} quá lớn: {size_bytes / 1024 / 1024:.1f}MB vượt quá giới hạn "
+                f"{MAX_UPLOAD_MB:.0f}MB(có thể điều chỉnh qua DOCUTRANSLATE_MAX_UPLOAD_MB)."
             ),
         )
 
@@ -109,8 +109,8 @@ class MaxBodySizeMiddleware:
                             status_code=413,
                             content={
                                 "detail": (
-                                    f"请求体过大: {length / 1024 / 1024:.1f}MB 超过上限 "
-                                    f"{MAX_UPLOAD_MB:.0f}MB（可通过 DOCUTRANSLATE_MAX_UPLOAD_MB 调整）。"
+                                    f"Nội dung yêu cầu quá lớn: {length / 1024 / 1024:.1f}MB vượt quá giới hạn "
+                                    f"{MAX_UPLOAD_MB:.0f}MB(có thể điều chỉnh qua DOCUTRANSLATE_MAX_UPLOAD_MB)."
                                 )
                             },
                         )
@@ -123,15 +123,15 @@ class MaxBodySizeMiddleware:
 tags_metadata = [
     {
         "name": "Service API",
-        "description": "核心的服务API，用于提交、管理和下载翻译任务。",
+        "description": "API dịch vụ cốt lõi, dùng để gửi, quản lý và tải xuống các tác vụ dịch.",
     },
     {
         "name": "Application",
-        "description": "应用本身的相关端点，如元信息和默认参数。",
+        "description": "Các endpoint của chính ứng dụng, như thông tin meta và tham số mặc định.",
     },
     {
         "name": "Temp",
-        "description": "测试用接口。",
+        "description": "Endpoint dùng để kiểm thử.",
     },
 ]
 
@@ -149,7 +149,7 @@ async def lifespan(app: FastAPI):
 
     global_logger.propagate = False
     global_logger.setLevel(logging.INFO)
-    global_logger.info("应用启动完成，多任务状态已初始化")
+    global_logger.info("Ứng dụng đã khởi động xong, trạng thái đa tác vụ đã được khởi tạo")
     if hasattr(app.state, "port_to_use"):
         if getattr(app.state, "with_mcp", False) and MCP_AVAILABLE:
             global_logger.info(
@@ -157,7 +157,7 @@ async def lifespan(app: FastAPI):
                 app.state.port_to_use,
             )
         global_logger.info(
-            "服务接口文档: http://127.0.0.1:%s/docs", app.state.port_to_use
+            "Tài liệu API: http://127.0.0.1:%s/docs", app.state.port_to_use
         )
         global_logger.info(
             "WebUI: http://127.0.0.1:%s", app.state.port_to_use
@@ -167,14 +167,14 @@ async def lifespan(app: FastAPI):
     yield  # Application running...
 
     # --- Shutdown phase ---
-    global_logger.info("正在关闭应用，开始清理资源")
+    global_logger.info("Đang đóng ứng dụng, bắt đầu dọn dẹp tài nguyên")
 
     # Cleanup all tasks via translation service
     await translation_service.cleanup_all()
 
     # Close HTTP client
     await httpx_client.aclose()
-    global_logger.info("应用关闭，资源已彻底释放")
+    global_logger.info("Ứng dụng đã đóng, tài nguyên đã được giải phóng hoàn toàn")
 
 
 app = FastAPI(
@@ -183,21 +183,21 @@ app = FastAPI(
     lifespan=lifespan,
     title="DocuTranslate API",
     description=f"""
-DocuTranslate 后端服务 API，提供文档翻译、状态查询、结果下载等功能。
+API dịch vụ backend của DocuTranslate, cung cấp các chức năng dịch tài liệu, truy vấn trạng thái, tải xuống kết quả, v.v.
 
-**注意**: 所有任务状态都保存在服务进程的内存中，服务重启将导致所有任务信息丢失。
+**Lưu ý**: Mọi trạng thái tác vụ đều được lưu trong bộ nhớ của tiến trình dịch vụ; khởi động lại dịch vụ sẽ làm mất toàn bộ thông tin tác vụ.
 
-### 主要工作流程:
-1.  **`POST /service/translate`** 或 **`POST /service/translate/file`**: 提交文件和包含`workflow_type`的翻译参数，启动一个后台任务。服务会自动生成并返回一个唯一的 `task_id`。
-2.  **`GET /service/status/{{task_id}}`**: 使用获取到的 `task_id` 轮询此端点，获取任务的实时状态。
-3.  **`GET /service/logs/{{task_id}}`**: (可选) 获取实时的翻译日志。
-4.  **`GET /service/download/{{task_id}}/{{file_type}}`**: 任务完成后 (当 `download_ready` 为 `true` 时)，通过此端点下载结果文件。
-5.  **`GET /service/attachment/{{task_id}}/{{identifier}}`**: (可选) 如果任务生成了附件（如术语表），通过此端点下载。
-6.  **`GET /service/content/{{task_id}}/{{file_type}}`**: 任务完成后(当 `download_ready` 为 `true` 时)，以JSON格式获取文件内容。
-7.  **`POST /service/cancel/{{task_id}}`**: (可选) 取消一个正在进行的任务。
-8.  **`POST /service/release/{{task_id}}`**: (可选) 当任务不再需要时，释放其在服务器上占用的所有资源，包括临时文件。
+### Quy trình chính:
+1.  **`POST /service/translate`** hoặc **`POST /service/translate/file`**: Gửi tệp cùng tham số dịch có chứa `workflow_type` để khởi động một tác vụ nền. Dịch vụ sẽ tự động tạo và trả về một `task_id` duy nhất.
+2.  **`GET /service/status/{{task_id}}`**: Dùng `task_id` đã nhận để thăm dò (poll) endpoint này nhằm lấy trạng thái thời gian thực của tác vụ.
+3.  **`GET /service/logs/{{task_id}}`**: (Tùy chọn) Lấy nhật ký dịch theo thời gian thực.
+4.  **`GET /service/download/{{task_id}}/{{file_type}}`**: Sau khi tác vụ hoàn thành (khi `download_ready` là `true`), tải tệp kết quả qua endpoint này.
+5.  **`GET /service/attachment/{{task_id}}/{{identifier}}`**: (Tùy chọn) Nếu tác vụ tạo ra tệp đính kèm (như bảng thuật ngữ), tải xuống qua endpoint này.
+6.  **`GET /service/content/{{task_id}}/{{file_type}}`**: Sau khi tác vụ hoàn thành (khi `download_ready` là `true`), lấy nội dung tệp ở định dạng JSON.
+7.  **`POST /service/cancel/{{task_id}}`**: (Tùy chọn) Hủy một tác vụ đang chạy.
+8.  **`POST /service/release/{{task_id}}`**: (Tùy chọn) Khi không còn cần tác vụ, giải phóng toàn bộ tài nguyên nó chiếm trên máy chủ, gồm cả tệp tạm.
 
-**版本**: {__version__}
+**Phiên bản**: {__version__}
 """,
     version=__version__,
 )
@@ -285,12 +285,12 @@ def setup_mcp_integration(
 
     if not MCP_AVAILABLE:
         global_logger.warning(
-            "MCP 依赖未安装；如需 --with-mcp，请安装 docutranslate[mcp]"
+            "Chưa cài đặt phụ thuộc MCP; nếu cần --with-mcp, hãy cài docutranslate[mcp]"
         )
         return None
 
     try:
-        global_logger.info("正在初始化 MCP 集成")
+        global_logger.info("Đang khởi tạo tích hợp MCP")
 
         # Mount MCP at /mcp path - pass the shared translation service
         # and the actual host/port that the web server is running on
@@ -305,7 +305,7 @@ def setup_mcp_integration(
 
         return translation_service
     except Exception as e:
-        global_logger.exception("MCP 集成初始化失败: %s", e)
+        global_logger.exception("Khởi tạo tích hợp MCP thất bại: %s", e)
         return None
 
 
@@ -322,7 +322,7 @@ def get_mcp_translation_service() -> Optional[TranslationService]:
 class TranslateServiceRequest(BaseModel):
     file_name: str = Field(
         ...,
-        description="上传的原始文件名，含扩展名。",
+        description="Tên tệp gốc đã tải lên, gồm cả phần mở rộng.",
         examples=[
             "my_paper.pdf",
             "chapter1.txt",
@@ -335,10 +335,10 @@ class TranslateServiceRequest(BaseModel):
         ],
     )
     file_content: str = Field(
-        ..., description="Base64编码的文件内容。", examples=["JVBERi0xLjcKJeLjz9MKMSAwIG9iago8PC/..."]
+        ..., description="Nội dung tệp mã hóa Base64.", examples=["JVBERi0xLjcKJeLjz9MKMSAwIG9iago8PC/..."]
     )
     payload: TranslatePayload = Field(
-        ..., description="包含工作流类型和相应参数的载荷。"
+        ..., description="Payload chứa loại workflow và các tham số tương ứng."
     )
 
     model_config = ConfigDict(
@@ -382,49 +382,49 @@ class TranslateServiceRequest(BaseModel):
 
 @service_router.post(
     "/translate",
-    summary="提交翻译任务 (统一入口)",
+    summary="Gửi tác vụ dịch (điểm vào thống nhất)",
     description="""
-接收一个包含文件内容（Base64编码）和工作流参数的JSON请求，启动一个后台翻译任务。
+Nhận một yêu cầu JSON chứa nội dung tệp (mã hóa Base64) và tham số workflow, rồi khởi động một tác vụ dịch nền.
 
-- **工作流选择**: `payload.workflow_type` 决定任务类型（如 `markdown_based`, `txt`, `json`, `xlsx`, `docx`, `srt`, `epub`, `html`, `ass`, `pptx`, `auto`）。
-- **Auto 模式**: 当设置为 `auto` 时，后端将根据 `file_name` 的扩展名自动选择最合适的工作流。
-- **动态参数**: 根据所选工作流，API需要不同的参数集。请参考下面的Schema或示例。
-- **异步处理**: 此端点会立即返回任务ID，客户端需轮询状态接口获取进度。
+- **Chọn workflow**: `payload.workflow_type` quyết định loại tác vụ (như `markdown_based`, `txt`, `json`, `xlsx`, `docx`, `srt`, `epub`, `html`, `ass`, `pptx`, `auto`).
+- **Chế độ Auto**: Khi đặt là `auto`, backend sẽ tự chọn workflow phù hợp nhất dựa trên phần mở rộng của `file_name`.
+- **Tham số động**: Tùy workflow được chọn, API cần các bộ tham số khác nhau. Vui lòng xem Schema hoặc ví dụ bên dưới.
+- **Xử lý bất đồng bộ**: Endpoint này trả về ID tác vụ ngay lập tức; client cần thăm dò endpoint trạng thái để biết tiến độ.
 """,
     responses={
         200: {
-            "description": "翻译任务已成功启动。",
+            "description": "Tác vụ dịch đã được khởi động thành công.",
             "content": {
                 "application/json": {
                     "example": {
                         "task_started": True,
                         "task_id": "a1b2c3d4",
-                        "message": "翻译任务已成功启动，请稍候...",
+                        "message": "Tác vụ dịch đã được khởi động thành công, vui lòng chờ...",
                     }
                 }
             },
         },
-        400: {"description": "请求体无效，例如Base64解码失败。"},
+        400: {"description": "Nội dung yêu cầu không hợp lệ, ví dụ giải mã Base64 thất bại."},
         429: {
-            "description": "服务器已有一个同ID的任务在处理中（理论上不应发生，因为ID是新生成的）。"
+            "description": "Máy chủ đã có một tác vụ cùng ID đang xử lý (về lý thuyết không xảy ra vì ID được tạo mới)."
         },
-        500: {"description": "启动后台任务时发生未知错误。"},
+        500: {"description": "Đã xảy ra lỗi không xác định khi khởi động tác vụ nền."},
     },
 )
 async def service_translate(
         request: TranslateServiceRequest = Body(
-            ..., description="翻译任务的详细参数和文件内容。"
+            ..., description="Tham số chi tiết và nội dung tệp của tác vụ dịch."
         )
 ):
     task_id = uuid.uuid4().hex[:8]
 
     try:
         # Accept line-wrapped Base64, but reject other ignored characters.
-        _enforce_upload_limit(len(request.file_content) * 3 // 4, "文件内容")
+        _enforce_upload_limit(len(request.file_content) * 3 // 4, "nội dung tệp")
         file_contents = base64.b64decode("".join(request.file_content.split()), validate=True)
-        _enforce_upload_limit(len(file_contents), "文件内容")
+        _enforce_upload_limit(len(file_contents), "nội dung tệp")
     except (binascii.Error, TypeError) as e:
-        raise HTTPException(status_code=400, detail=f"无效的Base64文件内容: {mask_secrets(str(e))}")
+        raise HTTPException(status_code=400, detail=f"Nội dung tệp Base64 không hợp lệ: {mask_secrets(str(e))}")
 
     try:
         response_data = await translation_service.start_translation(
@@ -450,36 +450,36 @@ async def service_translate(
 
 @service_router.post(
     "/translate/file",
-    summary="提交翻译任务 (文件上传)",
+    summary="Gửi tác vụ dịch (tải tệp lên)",
     description="""
-通过 `multipart/form-data` 方式上传文件并启动翻译任务。
+Tải tệp lên bằng `multipart/form-data` và khởi động tác vụ dịch.
 
-此接口适用于直接上传二进制文件（如 PDF, Docx 等），无需先进行 Base64 编码。
+Endpoint này phù hợp để tải trực tiếp tệp nhị phân (như PDF, Docx, v.v.), không cần mã hóa Base64 trước.
 """,
     responses={
         200: {
-            "description": "翻译任务已成功启动。",
+            "description": "Tác vụ dịch đã được khởi động thành công.",
             "content": {
                 "application/json": {
                     "example": {
                         "task_started": True,
                         "task_id": "a1b2c3d4",
-                        "message": "翻译任务已成功启动，请稍候...",
+                        "message": "Tác vụ dịch đã được khởi động thành công, vui lòng chờ...",
                     }
                 }
             },
         },
-        422: {"description": "请求参数验证失败，例如 JSON 格式错误。"},
+        422: {"description": "Xác thực tham số yêu cầu thất bại, ví dụ JSON sai định dạng."},
         429: {
-            "description": "服务器已有一个同ID的任务在处理中（理论上不应发生，因为ID是新生成的）。"
+            "description": "Máy chủ đã có một tác vụ cùng ID đang xử lý (về lý thuyết không xảy ra vì ID được tạo mới)."
         },
-        500: {"description": "启动后台任务时发生未知错误。"},
+        500: {"description": "Đã xảy ra lỗi không xác định khi khởi động tác vụ nền."},
     },
 )
 async def service_translate_file(
-        file: UploadFile = File(..., description="要翻译的文件"),
+        file: UploadFile = File(..., description="Tệp cần dịch"),
         payload: Json[TranslatePayload] = Form(
-            ..., description="包含工作流参数的JSON字符串 (详见接口文档说明)。"
+            ..., description="Chuỗi JSON chứa tham số workflow (xem chi tiết trong tài liệu API)."
         ),
 ):
     task_id = uuid.uuid4().hex[:8]
@@ -491,7 +491,7 @@ async def service_translate_file(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"读取上传文件失败: {mask_secrets(str(e))}")
+        raise HTTPException(status_code=500, detail=f"Đọc tệp tải lên thất bại: {mask_secrets(str(e))}")
 
     try:
         response_data = await translation_service.start_translation(
@@ -517,31 +517,31 @@ async def service_translate_file(
 
 @service_router.post(
     "/cancel/{task_id}",
-    summary="取消翻译任务",
-    description="根据任务ID取消一个正在进行中的翻译任务。如果任务已经完成、失败或已经被取消，则会返回错误。",
+    summary="Hủy tác vụ dịch",
+    description="Hủy một tác vụ dịch đang chạy theo ID tác vụ. Nếu tác vụ đã hoàn thành, thất bại hoặc đã bị hủy thì sẽ trả về lỗi.",
     responses={
-        200: {"description": "成功取消任务。"},
-        404: {"description": "任务ID不存在。"},
-        400: {"description": "任务已结束，无法取消。"},
+        200: {"description": "Hủy tác vụ thành công."},
+        404: {"description": "ID tác vụ không tồn tại."},
+        400: {"description": "Tác vụ đã kết thúc, không thể hủy."},
     },
 )
 async def service_cancel_translate(
-        task_id: str = FastApiPath(..., description="要取消的任务ID", examples=["a1b2c3d4"])
+        task_id: str = FastApiPath(..., description="ID tác vụ cần hủy", examples=["a1b2c3d4"])
 ):
     return translation_service.cancel_task(task_id)
 
 
 @service_router.post(
     "/release/{task_id}",
-    summary="释放任务资源",
-    description="根据任务ID释放其在服务器上占用的所有资源，包括状态、日志和缓存的翻译结果文件。如果任务正在进行，会先尝试取消该任务。此操作不可逆。",
+    summary="Giải phóng tài nguyên tác vụ",
+    description="Giải phóng toàn bộ tài nguyên mà tác vụ chiếm trên máy chủ theo ID tác vụ, gồm trạng thái, nhật ký và tệp kết quả dịch đã lưu đệm. Nếu tác vụ đang chạy, sẽ thử hủy trước. Thao tác này không thể hoàn tác.",
     responses={
-        200: {"description": "成功释放任务资源。"},
-        404: {"description": "任务ID不存在。"},
+        200: {"description": "Giải phóng tài nguyên tác vụ thành công."},
+        404: {"description": "ID tác vụ không tồn tại."},
     },
 )
 async def service_release_task(
-        task_id: str = FastApiPath(..., description="要释放资源的任务ID", examples=["a1b2c3d4"])
+        task_id: str = FastApiPath(..., description="ID tác vụ cần giải phóng tài nguyên", examples=["a1b2c3d4"])
 ):
     result = await translation_service.release_task(task_id)
     if not result["released"]:
@@ -554,20 +554,20 @@ async def service_release_task(
 
 @service_router.get(
     "/status/{task_id}",
-    summary="获取任务状态",
-    description="根据任务ID获取任务的当前状态。当 `download_ready` 为 `true` 时，`downloads` 和 `attachment` 对象中会包含可用的下载链接。",
+    summary="Lấy trạng thái tác vụ",
+    description="Lấy trạng thái hiện tại của tác vụ theo ID tác vụ. Khi `download_ready` là `true`, các đối tượng `downloads` và `attachment` sẽ chứa liên kết tải xuống khả dụng.",
     responses={
         200: {
-            "description": "成功获取任务状态。",
+            "description": "Lấy trạng thái tác vụ thành công.",
             "content": {
                 "application/json": {
                     "examples": {
                         "processing": {
-                            "summary": "进行中",
+                            "summary": "Đang chạy",
                             "value": {
                                 "task_id": "a1b2c3d4",
                                 "is_processing": True,
-                                "status_message": "正在处理 'annual_report.pdf'...",
+                                "status_message": "Đang xử lý 'annual_report.pdf'...",
                                 "error_flag": False,
                                 "download_ready": False,
                                 "progress_percent": 45,
@@ -603,11 +603,11 @@ async def service_release_task(
                             },
                         },
                         "completed": {
-                            "summary": "已完成",
+                            "summary": "Đã hoàn thành",
                             "value": {
                                 "task_id": "b2865b93",
                                 "is_processing": False,
-                                "status_message": "翻译成功！用时 123.45 秒。",
+                                "status_message": "Dịch thành công! Mất 123.45 giây.",
                                 "error_flag": False,
                                 "download_ready": True,
                                 "progress_percent": 100,
@@ -658,17 +658,17 @@ async def service_release_task(
                 }
             },
         },
-        404: {"description": "指定的任务ID不存在。"},
+        404: {"description": "ID tác vụ được chỉ định không tồn tại."},
     },
 )
 async def service_get_status(
         task_id: str = FastApiPath(
-            ..., description="要查询状态的任务的ID", examples=["b2865b93"]
+            ..., description="ID của tác vụ cần truy vấn trạng thái", examples=["b2865b93"]
         )
 ):
     task_state = translation_service.get_task_state(task_id)
     if not task_state:
-        raise HTTPException(status_code=404, detail=f"找不到任务ID '{task_id}'。")
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy ID tác vụ '{task_id}'.")
 
     downloads = {}
     if task_state.get("download_ready") and task_state.get("downloadable_files"):
@@ -709,15 +709,15 @@ def _get_default_statistics() -> dict:
 
 @service_router.get(
     "/logs/{task_id}",
-    summary="获取任务增量日志",
-    description="以流式方式获取任务的增量日志。客户端每次调用此接口，都会返回自上次调用以来产生的新日志行。",
+    summary="Lấy nhật ký gia tăng của tác vụ",
+    description="Lấy nhật ký gia tăng của tác vụ theo dạng luồng. Mỗi lần client gọi endpoint này sẽ nhận các dòng nhật ký mới phát sinh kể từ lần gọi trước.",
     responses={
-        200: {"description": "成功返回增量日志。"},
-        404: {"description": "任务ID不存在。"},
+        200: {"description": "Trả về nhật ký gia tăng thành công."},
+        404: {"description": "ID tác vụ không tồn tại."},
     },
 )
 async def service_get_logs(
-        task_id: str = FastApiPath(..., description="要获取日志的任务ID", examples=["a1b2c3d4"])
+        task_id: str = FastApiPath(..., description="ID tác vụ cần lấy nhật ký", examples=["a1b2c3d4"])
 ):
     new_logs = await translation_service.get_new_logs(task_id)
     return JSONResponse(content={"logs": new_logs})
@@ -741,24 +741,24 @@ FileType = Literal[
 
 @service_router.get(
     "/download/{task_id}/{file_type}",
-    summary="下载翻译结果文件",
+    summary="Tải xuống tệp kết quả dịch",
     responses={
         200: {
-            "description": "成功返回文件流。文件名通过 Content-Disposition 头指定。",
+            "description": "Trả về luồng tệp thành công. Tên tệp được chỉ định qua header Content-Disposition.",
         },
         404: {
-            "description": "任务ID不存在，或该任务不支持所请求的文件类型，或临时文件已丢失。"
+            "description": "ID tác vụ không tồn tại, hoặc tác vụ không hỗ trợ loại tệp được yêu cầu, hoặc tệp tạm đã mất."
         },
-        500: {"description": "在服务器上读取文件时发生内部错误。"},
+        500: {"description": "Lỗi nội bộ khi đọc tệp trên máy chủ."},
     },
 )
 async def service_download_file(
         task_id: str = FastApiPath(
-            ..., description="已完成任务的ID", examples=["b2865b93"]
+            ..., description="ID của tác vụ đã hoàn thành", examples=["b2865b93"]
         ),
         file_type: FileType = FastApiPath(
             ...,
-            description="要下载的文件类型。",
+            description="Loại tệp cần tải xuống.",
             examples=["html", "json", "csv", "docx", "srt", "epub", "ass", "pptx"],
         ),
 ):
@@ -766,7 +766,7 @@ async def service_download_file(
     if not file_info or not os.path.exists(file_info.get("path")):
         raise HTTPException(
             status_code=404,
-            detail=f"任务 '{task_id}' 不支持下载 '{file_type}' 类型的文件，或文件已丢失。",
+            detail=f"Tác vụ '{task_id}' không hỗ trợ tải xuống tệp loại '{file_type}', hoặc tệp đã mất.",
         )
 
     file_path = file_info["path"]
@@ -778,30 +778,30 @@ async def service_download_file(
 
 @service_router.get(
     "/attachment/{task_id}/{identifier}",
-    summary="下载附件文件",
-    description="根据任务ID和附件标识符下载在翻译过程中生成的附加文件，例如自动生成的术语表。",
+    summary="Tải xuống tệp đính kèm",
+    description="Tải xuống tệp bổ sung được tạo trong quá trình dịch, như bảng thuật ngữ tự động tạo, theo ID tác vụ và định danh tệp đính kèm.",
     responses={
         200: {
-            "description": "成功返回文件流。文件名通过 Content-Disposition 头指定。",
+            "description": "Trả về luồng tệp thành công. Tên tệp được chỉ định qua header Content-Disposition.",
         },
         404: {
-            "description": "任务ID不存在，或该任务没有指定的附件，或临时文件已丢失。"
+            "description": "ID tác vụ không tồn tại, hoặc tác vụ không có tệp đính kèm được chỉ định, hoặc tệp tạm đã mất."
         },
     },
 )
 async def service_download_attachment(
         task_id: str = FastApiPath(
-            ..., description="已完成任务的ID", examples=["g1h2i3j4"]
+            ..., description="ID của tác vụ đã hoàn thành", examples=["g1h2i3j4"]
         ),
         identifier: str = FastApiPath(
-            ..., description="要下载的附件的标识符。", examples=["glossary"]
+            ..., description="Định danh của tệp đính kèm cần tải xuống.", examples=["glossary"]
         ),
 ):
     attachment_info = translation_service.get_attachment_file_path(task_id, identifier)
     if not attachment_info or not os.path.exists(attachment_info.get("path")):
         raise HTTPException(
             status_code=404,
-            detail=f"任务 '{task_id}' 不存在标识符为 '{identifier}' 的附件，或文件已丢失。",
+            detail=f"Tác vụ '{task_id}' không có tệp đính kèm với định danh '{identifier}', hoặc tệp đã mất.",
         )
 
     file_path = attachment_info["path"]
@@ -813,8 +813,8 @@ async def service_download_attachment(
 
 @service_router.get(
     "/glossary/template",
-    summary="下载术语表模板",
-    description="下载术语表CSV模板，包含src和dst列，UTF-8 with BOM编码，适合在Excel中直接编辑。",
+    summary="Tải xuống mẫu bảng thuật ngữ",
+    description="Tải xuống mẫu CSV bảng thuật ngữ, gồm cột src và dst, mã hóa UTF-8 with BOM, phù hợp để chỉnh sửa trực tiếp trong Excel.",
 )
 async def download_glossary_template():
     # UTF-8 with BOM header
@@ -829,30 +829,30 @@ async def download_glossary_template():
 
 @service_router.get(
     "/content/{task_id}/{file_type}",
-    summary="下载翻译结果内容 (JSON)",
+    summary="Tải xuống nội dung kết quả dịch (JSON)",
     description="""
-以JSON格式获取指定文件类型的内容，而不是直接下载文件。
+Lấy nội dung của loại tệp được chỉ định ở định dạng JSON thay vì tải trực tiếp tệp.
 
-- **返回结构**: 返回一个JSON对象，包含文件名、文件类型和文件内容的Base64编码字符串。
-- **内容编码**: 文件内容总是以 **Base64** 编码，客户端需要自行解码才能使用。
+- **Cấu trúc trả về**: Trả về một đối tượng JSON gồm tên tệp, loại tệp và chuỗi Base64 của nội dung tệp.
+- **Mã hóa nội dung**: Nội dung tệp luôn được mã hóa **Base64**; client cần tự giải mã để sử dụng.
 """,
     responses={
         200: {
-            "description": "成功返回文件内容。",
+            "description": "Trả về nội dung tệp thành công.",
         },
         404: {
-            "description": "任务ID不存在，或该任务不支持所请求的文件类型，或临时文件已丢失。"
+            "description": "ID tác vụ không tồn tại, hoặc tác vụ không hỗ trợ loại tệp được yêu cầu, hoặc tệp tạm đã mất."
         },
-        500: {"description": "在服务器上读取文件时发生内部错误。"},
+        500: {"description": "Lỗi nội bộ khi đọc tệp trên máy chủ."},
     },
 )
 async def service_content(
         task_id: str = FastApiPath(
-            ..., description="已完成任务的ID", examples=["b2865b93"]
+            ..., description="ID của tác vụ đã hoàn thành", examples=["b2865b93"]
         ),
         file_type: FileType = FastApiPath(
             ...,
-            description="要获取内容的文件类型。",
+            description="Loại tệp cần lấy nội dung.",
             examples=["html", "json", "csv", "docx", "srt", "epub", "ass", "pptx"],
         ),
 ):
@@ -860,7 +860,7 @@ async def service_content(
     if not file_info or not os.path.exists(file_info.get("path")):
         raise HTTPException(
             status_code=404,
-            detail=f"任务 '{task_id}' 不支持获取 '{file_type}' 类型的内容，或文件已丢失。",
+            detail=f"Tác vụ '{task_id}' không hỗ trợ lấy nội dung loại '{file_type}', hoặc tệp đã mất.",
         )
 
     file_path = file_info["path"]
@@ -882,7 +882,7 @@ async def service_content(
             }
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"读取文件时发生内部错误: {mask_secrets(str(e))}")
+        raise HTTPException(status_code=500, detail=f"Lỗi nội bộ khi đọc tệp: {mask_secrets(str(e))}")
 
 
 # ===================================================================
@@ -890,7 +890,7 @@ async def service_content(
 # ===================================================================
 
 
-@service_router.get("/capabilities", summary="查询工作流输入和输出能力", tags=["Application"])
+@service_router.get("/capabilities", summary="Truy vấn khả năng đầu vào và đầu ra của workflow", tags=["Application"])
 def service_capabilities():
     from docutranslate.core.file_types import formats_info
     return formats_info()
@@ -898,12 +898,12 @@ def service_capabilities():
 
 @service_router.get(
     "/engin-list",
-    summary="获取可用的转换引擎",
-    description="返回当前服务支持的文档转换引擎列表，包括 MinerU Cloud、MinerU Local。",
+    summary="Lấy các engine chuyển đổi khả dụng",
+    description="Trả về danh sách engine chuyển đổi tài liệu mà dịch vụ hiện hỗ trợ, gồm MinerU Cloud, MinerU Local.",
     tags=["Application"],
     responses={
         200: {
-            "description": "成功返回可用的转换引擎列表。",
+            "description": "Trả về danh sách engine chuyển đổi khả dụng thành công.",
             "content": {
                 "application/json": {
                     "example": ["mineru", "mineru_deploy"]
@@ -919,12 +919,12 @@ async def service_get_engin_list():
 
 @service_router.get(
     "/task-list",
-    summary="获取任务列表",
-    description="返回当前所有正在处理或已完成的翻译任务ID列表。",
+    summary="Lấy danh sách tác vụ",
+    description="Trả về danh sách ID của mọi tác vụ dịch đang xử lý hoặc đã hoàn thành.",
     tags=["Application"],
     responses={
         200: {
-            "description": "成功返回任务ID列表。",
+            "description": "Trả về danh sách ID tác vụ thành công.",
             "content": {
                 "application/json": {
                     "example": ["a1b2c3d4", "e5f6g7h8"]
@@ -939,12 +939,12 @@ async def service_get_task_list():
 
 @service_router.get(
     "/default-params",
-    summary="获取默认参数",
-    description="返回服务使用的默认参数，包括并发数、分块大小、温度、超时等配置。",
+    summary="Lấy tham số mặc định",
+    description="Trả về các tham số mặc định mà dịch vụ sử dụng, gồm số luồng đồng thời, kích thước khối, nhiệt độ, thời gian chờ, v.v.",
     tags=["Application"],
     responses={
         200: {
-            "description": "成功返回默认参数。",
+            "description": "Trả về tham số mặc định thành công.",
             "content": {
                 "application/json": {
                     "example": {
@@ -966,12 +966,12 @@ def service_get_default_params():
 
 @service_router.get(
     "/meta",
-    summary="获取应用信息",
-    description="返回当前服务的版本号等元信息。",
+    summary="Lấy thông tin ứng dụng",
+    description="Trả về thông tin meta của dịch vụ như số phiên bản.",
     tags=["Application"],
     responses={
         200: {
-            "description": "成功返回应用信息。",
+            "description": "Trả về thông tin ứng dụng thành công.",
             "content": {
                 "application/json": {
                     "example": {"version": "1.0.0"}
@@ -988,31 +988,31 @@ async def service_get_app_version():
     "/flat-translate",
     summary="translate(sync)",
     description="""
-上传文件并直接等待翻译完成，无需轮询状态。
-所有参数均已扁平化展开，直接通过 Form 表单提交。
+Tải tệp lên và chờ dịch xong trực tiếp, không cần thăm dò trạng thái.
+Mọi tham số đều được làm phẳng và gửi trực tiếp qua Form.
 """,
     response_model=None,
     responses={
-        200: {"description": "翻译成功，返回翻译后的文件内容。"},
-        500: {"description": "翻译过程中发生错误。"},
+        200: {"description": "Dịch thành công, trả về nội dung tệp đã dịch."},
+        500: {"description": "Đã xảy ra lỗi trong quá trình dịch."},
     },
 )
 async def service_flat_translate(
         request: Request,
-        file: UploadFile = File(..., description="要翻译的文件"),
-        model_id: str = Form("", description="模型ID (例如: gpt-4o, glm-4-air)，当 skip_translate=False 时必填"),
+        file: UploadFile = File(..., description="Tệp cần dịch"),
+        model_id: str = Form("", description="ID mô hình (ví dụ: gpt-4o, glm-4-air), bắt buộc khi skip_translate=False"),
         base_url: Optional[str] = Form("",
-                                       description="LLM API 基础 URL (如不填则依赖环境变量或默认值，当 skip_translate=False 时必填)"),
-        api_key: str = Form("xx", description="API Key (默认xx)"),
-        to_lang: str = Form("中文", description="目标翻译语言"),
+                                       description="URL cơ sở của LLM API (nếu bỏ trống sẽ dùng biến môi trường hoặc giá trị mặc định; bắt buộc khi skip_translate=False)"),
+        api_key: str = Form("xx", description="API Key (mặc định xx)"),
+        to_lang: str = Form("中文", description="Ngôn ngữ đích"),
         workflow_type: str = Form("auto",
-                                  description="工作流类型: auto, markdown_based, txt, json, xlsx, docx, srt, epub, html, ass, pptx"),
-        skip_translate: bool = Form(False, description="是否跳过翻译仅进行格式解析"),
-        concurrent: int = Form(default_params["concurrent"], description="并发请求数"),
-        chunk_size: int = Form(default_params["chunk_size"], description="文本分块大小"),
-        temperature: float = Form(default_params["temperature"], description="温度 (0-1)"),
-        top_p: float = Form(default_params["top_p"], description="核采样 (0-1)"),
-        timeout: int = Form(default_params["timeout"], description="单个翻译分片总超时时间（包含全部重试，秒）"),
+                                  description="Loại workflow: auto, markdown_based, txt, json, xlsx, docx, srt, epub, html, ass, pptx"),
+        skip_translate: bool = Form(False, description="Có bỏ qua dịch và chỉ phân tích định dạng hay không"),
+        concurrent: int = Form(default_params["concurrent"], description="Số yêu cầu đồng thời"),
+        chunk_size: int = Form(default_params["chunk_size"], description="Kích thước khối văn bản"),
+        temperature: float = Form(default_params["temperature"], description="Nhiệt độ (0-1)"),
+        top_p: float = Form(default_params["top_p"], description="Nucleus sampling (0-1)"),
+        timeout: int = Form(default_params["timeout"], description="Tổng thời gian chờ cho mỗi đoạn dịch (gồm mọi lần thử lại, tính bằng giây)"),
         connect_timeout: Optional[float] = Form(None),
         read_timeout: Optional[float] = Form(None),
         write_timeout: Optional[float] = Form(None),
@@ -1021,46 +1021,46 @@ async def service_flat_translate(
         stream_idle_timeout: Optional[float] = Form(None),
         non_stream_timeout: Optional[float] = Form(None),
         office_password: Optional[str] = Form(None),
-        html_exporter_options_json: Optional[str] = Form(None, description="HTML导出选项JSON，如{\"cdn\": false, \"include_hidden_slides\": true}"),
-        md2docx_engine: Optional[str] = Form(INHERIT, description="inherit继承配置；none禁用DOCX导出；python/pandoc/auto选择引擎"),
-        retry: int = Form(default_params["retry"], description="失败重试次数"),
-        thinking: str = Form("default", description="思考模式: default, enable, disable"),
-        custom_prompt: Optional[str] = Form("", description="自定义系统提示词"),
-        system_proxy_enable: bool = Form(default_params["system_proxy_enable"], description="是否启用系统代理"),
-        force_json: bool = Form(False, description="强制 LLM 输出 JSON 格式"),
-        rpm: Optional[int] = Form(None, description="RPM (每分钟请求数) 限制"),
-        tpm: Optional[int] = Form(None, description="TPM (每分钟 Token 数) 限制"),
-        provider: Optional[str] = Form("", description="LLM 提供商标识 (用于特定平台的特殊处理)"),
-        insert_mode: Optional[str] = Form(None, description="插入模式: replace(替换), append(追加), prepend(前置)"),
-        separator: Optional[str] = Form(None, description="追加/前置时的分隔符"),
-        segment_mode: Optional[str] = Form(None, description="[Txt专用] 分段模式: line(按行), paragraph(按段), none(全文)"),
-        translate_regions: Optional[List[str]] = Form(None, description="[Xlsx专用] 翻译区域列表, 如 'Sheet1!A1:B10'"),
+        html_exporter_options_json: Optional[str] = Form(None, description="Tùy chọn xuất HTML dạng JSON, ví dụ {\"cdn\": false, \"include_hidden_slides\": true}"),
+        md2docx_engine: Optional[str] = Form(INHERIT, description="inherit: kế thừa cấu hình; none: tắt xuất DOCX; python/pandoc/auto: chọn engine"),
+        retry: int = Form(default_params["retry"], description="Số lần thử lại khi thất bại"),
+        thinking: str = Form("default", description="Chế độ suy nghĩ: default, enable, disable"),
+        custom_prompt: Optional[str] = Form("", description="Prompt hệ thống tùy chỉnh"),
+        system_proxy_enable: bool = Form(default_params["system_proxy_enable"], description="Có bật proxy hệ thống hay không"),
+        force_json: bool = Form(False, description="Bắt buộc LLM xuất định dạng JSON"),
+        rpm: Optional[int] = Form(None, description="Giới hạn RPM (số yêu cầu mỗi phút)"),
+        tpm: Optional[int] = Form(None, description="Giới hạn TPM (số Token mỗi phút)"),
+        provider: Optional[str] = Form("", description="Định danh nhà cung cấp LLM (dùng để xử lý đặc thù cho từng nền tảng)"),
+        insert_mode: Optional[str] = Form(None, description="Chế độ chèn: replace (thay thế), append (nối vào cuối), prepend (chèn vào đầu)"),
+        separator: Optional[str] = Form(None, description="Ký tự phân tách khi nối cuối/chèn đầu"),
+        segment_mode: Optional[str] = Form(None, description="[Chỉ Txt] Chế độ phân đoạn: line (theo dòng), paragraph (theo đoạn), none (toàn văn)"),
+        translate_regions: Optional[List[str]] = Form(None, description="[Chỉ Xlsx] Danh sách vùng cần dịch, ví dụ 'Sheet1!A1:B10'"),
         convert_engine: Optional[ConvertEngineType] = Form(None,
-                                                           description="[PDF/MD] 解析引擎: mineru, identity,mineru_deploy。留空时按文件后缀自动选择。"),
+                                                           description="[PDF/MD] Engine phân tích: mineru, identity, mineru_deploy. Để trống thì tự chọn theo phần mở rộng tệp."),
         mineru_token: Optional[str] = Form("", description="[MinerU Cloud] API Token"),
-        model_version: str = Form("vlm", description="[MinerU Cloud] 模型版本: vlm, pipeline, MinerU-HTML"),
-        mineru_language: str = Form("ch", description="[MinerU Cloud] 识别语言: ch, ch_server, en, japan, korean, chinese_cht, ta, te, ka, el, th, latin, arabic, cyrillic, east_slavic, devanagari"),
-        formula_ocr: bool = Form(True, description="[PDF] 是否启用公式识别"),
-        mineru_deploy_base_url: str = Form("http://127.0.0.1:8000", description="[MinerU Local] 服务地址"),
-        mineru_deploy_api_key: Optional[str] = Form(None, description="[MinerU Local] 可选的服务鉴权密钥，空值回退到环境变量"),
+        model_version: str = Form("vlm", description="[MinerU Cloud] Phiên bản mô hình: vlm, pipeline, MinerU-HTML"),
+        mineru_language: str = Form("ch", description="[MinerU Cloud] Ngôn ngữ nhận dạng: ch, ch_server, en, japan, korean, chinese_cht, ta, te, ka, el, th, latin, arabic, cyrillic, east_slavic, devanagari"),
+        formula_ocr: bool = Form(True, description="[PDF] Có bật nhận dạng công thức hay không"),
+        mineru_deploy_base_url: str = Form("http://127.0.0.1:8000", description="[MinerU Local] Địa chỉ dịch vụ"),
+        mineru_deploy_api_key: Optional[str] = Form(None, description="[MinerU Local] Khóa xác thực dịch vụ (tùy chọn); nếu trống sẽ dùng biến môi trường"),
         mineru_deploy_backend: str = Form("hybrid-engine",
-                                          description="[MinerU Local] 后端类型: pipeline, vlm-engine, vlm-http-client, hybrid-engine, hybrid-http-client"),
-        mineru_deploy_effort: str = Form("medium", description="[MinerU Local] Hybrid 解析强度: medium, high"),
-        mineru_deploy_parse_method: str = Form("auto", description="[MinerU Local] 解析方法: auto, txt, ocr"),
-        mineru_deploy_formula_enable: bool = Form(True, description="[MinerU Local] 是否启用公式"),
-        mineru_deploy_table_enable: bool = Form(True, description="[MinerU Local] 是否启用表格"),
-        mineru_deploy_image_analysis: bool = Form(True, description="[MinerU Local] 是否启用图片/图表分析"),
-        mineru_deploy_start_page_id: int = Form(0, description="[MinerU Local] 起始页码"),
-        mineru_deploy_end_page_id: int = Form(99999, description="[MinerU Local] 结束页码"),
-        mineru_deploy_lang_list: Optional[List[str]] = Form(None, description="[MinerU Local] 语言列表"),
+                                          description="[MinerU Local] Loại backend: pipeline, vlm-engine, vlm-http-client, hybrid-engine, hybrid-http-client"),
+        mineru_deploy_effort: str = Form("medium", description="[MinerU Local] Cường độ phân tích Hybrid: medium, high"),
+        mineru_deploy_parse_method: str = Form("auto", description="[MinerU Local] Phương pháp phân tích: auto, txt, ocr"),
+        mineru_deploy_formula_enable: bool = Form(True, description="[MinerU Local] Có bật công thức hay không"),
+        mineru_deploy_table_enable: bool = Form(True, description="[MinerU Local] Có bật bảng hay không"),
+        mineru_deploy_image_analysis: bool = Form(True, description="[MinerU Local] Có bật phân tích hình ảnh/biểu đồ hay không"),
+        mineru_deploy_start_page_id: int = Form(0, description="[MinerU Local] Trang bắt đầu"),
+        mineru_deploy_end_page_id: int = Form(99999, description="[MinerU Local] Trang kết thúc"),
+        mineru_deploy_lang_list: Optional[List[str]] = Form(None, description="[MinerU Local] Danh sách ngôn ngữ"),
         mineru_deploy_server_url: Optional[str] = Form("",
-                                                       description="[MinerU Local] Server URL (backend='vlm-http-client'时使用)"),
-        json_paths: Optional[List[str]] = Form(None, description="[Json专用] JsonPath 表达式列表, 如 '$.name'"),
-        glossary_generate_enable: bool = Form(False, description="是否开启术语表自动生成"),
-        glossary_dict_json: Optional[str] = Form("", description="术语表字典 JSON 字符串, 格式: {'原文':'译文'}"),
+                                                       description="[MinerU Local] Server URL (dùng khi backend='vlm-http-client')"),
+        json_paths: Optional[List[str]] = Form(None, description="[Chỉ Json] Danh sách biểu thức JsonPath, ví dụ '$.name'"),
+        glossary_generate_enable: bool = Form(False, description="Có bật tự động tạo bảng thuật ngữ hay không"),
+        glossary_dict_json: Optional[str] = Form("", description="Chuỗi JSON từ điển thuật ngữ, định dạng: {'nguyên văn':'bản dịch'}"),
         glossary_agent_config_json: Optional[str] = Form("",
-                                                         description="术语表 Agent 配置 JSON 字符串 (包含 base_url, model_id 等)"),
-        extra_body_json: Optional[str] = Form("", description="额外请求体参数 JSON 字符串, 会合并到 API 请求中")
+                                                         description="Chuỗi JSON cấu hình Agent bảng thuật ngữ (gồm base_url, model_id, v.v.)"),
+        extra_body_json: Optional[str] = Form("", description="Chuỗi JSON tham số body bổ sung, sẽ được gộp vào yêu cầu API")
 ):
     task_id = uuid.uuid4().hex[:8]
 
@@ -1072,39 +1072,39 @@ async def service_flat_translate(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"文件读取失败: {mask_secrets(str(e))}")
+        raise HTTPException(status_code=500, detail=f"Đọc tệp thất bại: {mask_secrets(str(e))}")
 
     parsed_glossary_dict = None
     if glossary_dict_json and glossary_dict_json.strip():
         try:
             parsed_glossary_dict = json.loads(glossary_dict_json)
             if not isinstance(parsed_glossary_dict, dict):
-                raise ValueError("必须是字典")
+                raise ValueError("Phải là một từ điển (dict)")
         except Exception as e:
-            raise HTTPException(status_code=400, detail=f"glossary_dict_json 解析失败: {mask_secrets(str(e))}")
+            raise HTTPException(status_code=400, detail=f"glossary_dict_json phân tích thất bại: {mask_secrets(str(e))}")
 
     parsed_glossary_agent = None
     if glossary_agent_config_json and glossary_agent_config_json.strip():
         try:
             parsed_glossary_agent = json.loads(glossary_agent_config_json)
         except Exception as e:
-            raise HTTPException(status_code=400, detail=f"glossary_agent_config_json 解析失败: {mask_secrets(str(e))}")
+            raise HTTPException(status_code=400, detail=f"glossary_agent_config_json phân tích thất bại: {mask_secrets(str(e))}")
 
     # Parse extra_body if provided - validate but keep as string
     if extra_body_json and extra_body_json.strip():
         try:
             parsed_extra = json.loads(extra_body_json)
             if not isinstance(parsed_extra, dict):
-                raise HTTPException(status_code=400, detail="extra_body_json 必须是 JSON 对象")
+                raise HTTPException(status_code=400, detail="extra_body_json phải là một đối tượng JSON")
         except Exception as e:
-            raise HTTPException(status_code=400, detail=f"extra_body_json 解析失败: {mask_secrets(str(e))}")
+            raise HTTPException(status_code=400, detail=f"extra_body_json phân tích thất bại: {mask_secrets(str(e))}")
 
     parsed_html_options = None
     if html_exporter_options_json:
         try:
             parsed_html_options = json.loads(html_exporter_options_json)
         except ValueError as exc:
-            raise HTTPException(status_code=400, detail="html_exporter_options_json 必须是有效JSON") from exc
+            raise HTTPException(status_code=400, detail="html_exporter_options_json phải là JSON hợp lệ") from exc
     submitted_form = await request.form()
     payload_dict = {
         "workflow_type": workflow_type,
@@ -1197,7 +1197,7 @@ async def service_flat_translate(
     try:
         payload_obj = TypeAdapter(TranslatePayload).validate_python(payload_dict)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"参数配置校验失败: {mask_secrets(str(e))}")
+        raise HTTPException(status_code=400, detail=f"Xác thực cấu hình tham số thất bại: {mask_secrets(str(e))}")
 
     try:
         await translation_service.start_translation(
@@ -1210,21 +1210,21 @@ async def service_flat_translate(
         # 保留 start_translation 抛出的 400/429 等语义，避免客户端错误被改写为 500。
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"内部翻译错误: {mask_secrets(str(e))}")
+        raise HTTPException(status_code=500, detail=f"Lỗi dịch nội bộ: {mask_secrets(str(e))}")
 
     task_state = translation_service.get_task_state(task_id)
 
     if not task_state:
-        raise HTTPException(status_code=500, detail="任务状态丢失")
+        raise HTTPException(status_code=500, detail="Trạng thái tác vụ bị mất")
 
     if task_state.get("error_flag"):
-        error_msg = task_state.get("status_message", "未知错误")
+        error_msg = task_state.get("status_message", "Lỗi không xác định")
         temp_dir = task_state.get("temp_dir")
         if temp_dir and os.path.isdir(temp_dir):
             import shutil
             shutil.rmtree(temp_dir)
         await translation_service.release_task(task_id)
-        raise HTTPException(status_code=500, detail=f"翻译任务失败: {error_msg}")
+        raise HTTPException(status_code=500, detail=f"Tác vụ dịch thất bại: {error_msg}")
 
     task = task_state.get("current_task_ref")
     if task:
@@ -1234,18 +1234,18 @@ async def service_flat_translate(
 
     if not task_state:
         # 任务可能已被并发请求 /release 释放。
-        raise HTTPException(status_code=410, detail=f"任务 '{task_id}' 已被释放，无法获取结果。")
+        raise HTTPException(status_code=410, detail=f"Tác vụ '{task_id}' đã được giải phóng, không thể lấy kết quả.")
 
     if task_state.get("cancelled"):
         raise HTTPException(
             status_code=409,
-            detail=f"翻译任务已取消: {task_state.get('status_message', '')}",
+            detail=f"Tác vụ dịch đã bị hủy: {task_state.get('status_message', '')}",
         )
 
     if task_state.get("error_flag"):
-        error_msg = task_state.get("status_message", "未知错误")
+        error_msg = task_state.get("status_message", "Lỗi không xác định")
         await translation_service.release_task(task_id)
-        raise HTTPException(status_code=500, detail=f"翻译任务失败: {error_msg}")
+        raise HTTPException(status_code=500, detail=f"Tác vụ dịch thất bại: {error_msg}")
 
     base_url_str = str(request.base_url).rstrip("/")
     downloads = {}
@@ -1351,13 +1351,13 @@ def run_app(host=None, port: int | None = None, enable_CORS=False,
         port_to_use = find_free_port(initial_port)
         if port_to_use != initial_port:
             global_logger.warning(
-                "端口 %s 被占用，将使用端口 %s", initial_port, port_to_use
+                "Cổng %s đã bị chiếm, sẽ dùng cổng %s", initial_port, port_to_use
             )
-        global_logger.info("正在启动 DocuTranslate WebUI %s", __version__)
+        global_logger.info("Đang khởi động DocuTranslate WebUI %s", __version__)
         app.state.port_to_use = port_to_use
         app.state.with_mcp = with_mcp
         if enable_CORS:
-            global_logger.info("已开启跨域: allow_origin_regex=%s", allow_origin_regex)
+            global_logger.info("Đã bật CORS: allow_origin_regex=%s", allow_origin_regex)
             app.add_middleware(
                 CORSMiddleware,
                 allow_origin_regex=allow_origin_regex,
@@ -1380,7 +1380,7 @@ def run_app(host=None, port: int | None = None, enable_CORS=False,
 
         uvicorn.run(app, host=host, port=port_to_use, workers=1)
     except Exception as e:
-        global_logger.exception("启动失败: %s", e)
+        global_logger.exception("Khởi động thất bại: %s", e)
 
 
 if __name__ == "__main__":
