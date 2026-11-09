@@ -99,7 +99,7 @@ class ConverterMineru(X2MarkdownConverter):
         返回拆分后的 bytes 列表。如果不超限，返回包含原内容的单元素列表。
         """
         if not HAS_PYPDF:
-            self.logger.warning("未安装 pypdf，无法进行 PDF 页数检查和拆分。如果文件超过限制可能会失败。")
+            self.logger.warning("Chưa cài pypdf nên không thể kiểm tra số trang và tách PDF. Nếu tệp vượt giới hạn có thể sẽ thất bại.")
             return [content]
 
         max_size_bytes = self.max_size_mb * 1024 * 1024
@@ -113,7 +113,7 @@ class ConverterMineru(X2MarkdownConverter):
             if total_pages <= self.max_pages and original_size <= max_size_bytes:
                 return [content]
 
-            self.logger.info(f"PDF 需要拆分: {total_pages}页, {original_size / 1024 / 1024:.1f}MB (限制: {self.max_pages}页, {self.max_size_mb}MB)")
+            self.logger.info(f"PDF cần được tách: {total_pages} trang, {original_size / 1024 / 1024:.1f}MB (giới hạn: {self.max_pages} trang, {self.max_size_mb}MB)")
             chunks = []
 
             def build_chunk(start: int, end: int) -> bytes:
@@ -129,7 +129,7 @@ class ConverterMineru(X2MarkdownConverter):
             while start_page < total_pages:
                 tentative_end = min(start_page + self.max_pages, total_pages)
                 chunk_start = time.monotonic()
-                self.logger.info(f"正在生成 PDF 切片 {len(chunks) + 1}: 页 {start_page + 1}-{tentative_end}...")
+                self.logger.info(f"Đang tạo phần PDF {len(chunks) + 1}: trang {start_page + 1}-{tentative_end}...")
                 # 通常只受页数限制：先直接生成最大分片，超出大小限制才二分。
                 best_end = tentative_end
                 chunk_content = build_chunk(start_page, tentative_end)
@@ -153,20 +153,20 @@ class ConverterMineru(X2MarkdownConverter):
 
                 chunks.append(chunk_content)
                 chunk_size_mb = len(chunk_content) / 1024 / 1024
-                page_range = f"页 {start_page + 1}-{best_end}" if best_end > start_page + 1 else f"页 {start_page + 1}"
-                self.logger.info(f"  切片 {len(chunks)}: {page_range}, {chunk_size_mb:.1f}MB, 耗时 {time.monotonic() - chunk_start:.2f}秒")
+                page_range = f" trang {start_page + 1}-{best_end}" if best_end > start_page + 1 else f" trang {start_page + 1}"
+                self.logger.info(f"  Phần {len(chunks)}: {page_range}, {chunk_size_mb:.1f}MB, mất {time.monotonic() - chunk_start:.2f} giây")
 
                 # 如果单页就超过大小限制，发出警告
                 if best_end == start_page + 1 and chunk_size_mb > self.max_size_mb:
-                    self.logger.warning(f"    警告: 第 {start_page + 1} 页大小 ({chunk_size_mb:.1f}MB) 超过单文件限制 ({self.max_size_mb}MB)，仍将尝试上传")
+                    self.logger.warning(f"    Cảnh báo: trang {start_page + 1} có kích thước ({chunk_size_mb:.1f}MB) vượt giới hạn mỗi tệp ({self.max_size_mb}MB), vẫn sẽ thử tải lên")
 
                 start_page = best_end
 
-            self.logger.info(f"PDF 已拆分为 {len(chunks)} 个部分。")
+            self.logger.info(f"PDF đã được tách thành {len(chunks)} phần.")
             return chunks
 
         except Exception as e:
-            self.logger.error(f"PDF 拆分失败: {e}")
+            self.logger.error(f"Tách PDF thất bại: {e}")
             # 如果拆分出错，尝试按原文件上传（兜底）
             return [content]
 
@@ -196,9 +196,9 @@ class ConverterMineru(X2MarkdownConverter):
         data = cls._api_data(payload)
         batch_id, urls = data.get("batch_id"), data.get("file_urls")
         if not isinstance(batch_id, str) or not batch_id:
-            raise RuntimeError("MinerU 上传响应缺少 batch_id")
+            raise RuntimeError("Phản hồi tải lên của MinerU thiếu batch_id")
         if not isinstance(urls, list) or not urls or not isinstance(urls[0], str) or not urls[0]:
-            raise RuntimeError("MinerU 上传响应缺少 file_urls")
+            raise RuntimeError("Phản hồi tải lên của MinerU thiếu file_urls")
         return batch_id, urls[0]
 
     def upload(self, document: Document):
@@ -227,13 +227,13 @@ class ConverterMineru(X2MarkdownConverter):
         if state == "done":
             url = fileinfo.get("full_zip_url")
             if not isinstance(url, str) or not url:
-                raise RuntimeError("MinerU 任务已完成但缺少 full_zip_url")
+                raise RuntimeError("Tác vụ MinerU đã hoàn tất nhưng thiếu full_zip_url")
             return url
         if state == "failed":
             message = fileinfo.get("err_msg") or fileinfo.get("message") or "Unknown error"
-            raise RuntimeError(f"MinerU 处理失败: {message}")
+            raise RuntimeError(f"MinerU xử lý thất bại: {message}")
         if state not in {"waiting-file", "pending", "running", "converting"}:
-            raise RuntimeError(f"MinerU 返回了未知任务状态: {state!r}")
+            raise RuntimeError(f"MinerU trả về trạng thái tác vụ không xác định: {state!r}")
         return None
 
     @staticmethod
@@ -253,7 +253,7 @@ class ConverterMineru(X2MarkdownConverter):
             if file_url is not None:
                 return file_url
             time.sleep(min(3, max(0, deadline - time.monotonic())))
-        raise TimeoutError(f"MinerU 任务 {batch_id} 超过总等待时间 {self.task_timeout} 秒")
+        raise TimeoutError(f"Tác vụ MinerU {batch_id} vượt quá tổng thời gian chờ {self.task_timeout} giây")
 
     async def get_file_url_async(self, batch_id: str) -> str:
         deadline = time.monotonic() + self.task_timeout
@@ -265,7 +265,7 @@ class ConverterMineru(X2MarkdownConverter):
             if file_url is not None:
                 return file_url
             await asyncio.sleep(min(3, max(0, deadline - time.monotonic())))
-        raise TimeoutError(f"MinerU 任务 {batch_id} 超过总等待时间 {self.task_timeout} 秒")
+        raise TimeoutError(f"Tác vụ MinerU {batch_id} vượt quá tổng thời gian chờ {self.task_timeout} giây")
 
     def _process_single_chunk(self, content: bytes, original_doc: Document, index: int = 0) -> Tuple[str, bytes]:
         """
@@ -301,7 +301,7 @@ class ConverterMineru(X2MarkdownConverter):
         return md_content, mineru_parsed
 
     def convert(self, document: Document) -> MarkdownDocument:
-        self.logger.info(f"正在将文档转换为markdown,model_version:{self.model_version}")
+        self.logger.info(f"Đang chuyển tài liệu sang markdown, model_version:{self.model_version}")
         time1 = time.time()
 
         # 1. 检查是否需要拆分 (仅针对 PDF)
@@ -317,7 +317,7 @@ class ConverterMineru(X2MarkdownConverter):
         # 2. 依次处理每个分片
         for i, chunk_content in enumerate(chunks):
             if is_split:
-                self.logger.info(f"正在处理分片 {i + 1}/{len(chunks)}...")
+                self.logger.info(f"Đang xử lý phần {i + 1}/{len(chunks)}...")
 
             md_content, mineru_parsed = self._process_single_chunk(chunk_content, document, i)
             combined_md.append(md_content)
@@ -333,13 +333,13 @@ class ConverterMineru(X2MarkdownConverter):
         # 3. 合并 Markdown
         final_content = "\n\n".join(combined_md)
 
-        self.logger.info(f"已转换为markdown，耗时{time.time() - time1}秒")
+        self.logger.info(f"Đã chuyển sang markdown, mất {time.time() - time1} giây")
         md_document = MarkdownDocument.from_bytes(content=final_content.encode("utf-8"), suffix=".md",
                                                   stem=document.stem)
         return md_document
 
     async def convert_async(self, document: Document) -> MarkdownDocument:
-        self.logger.info(f"正在将文档转换为markdown (Async), model_version:{self.model_version}")
+        self.logger.info(f"Đang chuyển tài liệu sang markdown (Async), model_version:{self.model_version}")
         time1 = time.time()
 
         # 1. 检查是否需要拆分
@@ -374,7 +374,7 @@ class ConverterMineru(X2MarkdownConverter):
         # 3. 合并 Markdown
         final_content = "\n\n".join(combined_md)
 
-        self.logger.info(f"已转换为markdown，耗时{time.time() - time1}秒")
+        self.logger.info(f"Đã chuyển sang markdown, mất {time.time() - time1} giây")
         md_document = MarkdownDocument.from_bytes(content=final_content.encode("utf-8"), suffix=".md",
                                                   stem=document.stem)
         return md_document
@@ -401,26 +401,26 @@ def get_md_from_zip_url_with_inline_images(
         md_content = embed_inline_image_from_zip(response.content, filename_in_zip=filename_in_zip,
                                            encoding=encoding)
         if md_content is None:
-            raise Exception("无法从 ZIP 中提取 Markdown 文件")
+            raise Exception("Không thể trích xuất tệp Markdown từ ZIP")
         return md_content, response.content
 
 
     except httpx.HTTPStatusError as e:
         request_id = e.response.headers.get("x-request-id", "-")
         raise RuntimeError(
-            f"MinerU ZIP 下载失败: status={e.response.status_code}, "
+            f"Tải ZIP của MinerU thất bại: status={e.response.status_code}, "
             f"request_id={request_id}"
         ) from e
     except httpx.RequestError as e:
         raise RuntimeError(
-            f"MinerU ZIP 下载网络错误: type={type(e).__name__}"
+            f"Lỗi mạng khi tải ZIP của MinerU: type={type(e).__name__}"
         ) from e
     except zipfile.BadZipFile:
-        raise Exception("错误: 下载的文件不是一个有效的ZIP压缩文件或已损坏。")
+        raise Exception("Lỗi: Tệp đã tải xuống không phải tệp ZIP hợp lệ hoặc đã bị hỏng.")
     except UnicodeDecodeError:
-        raise Exception(f"错误: 无法使用 '{encoding}' 编码解码文件 '{filename_in_zip}' 的内容。")
+        raise Exception(f"Lỗi: Không thể dùng bảng mã '{encoding}' để giải mã tệp '{filename_in_zip}'.")
     except Exception as e:
-        raise RuntimeError(f"处理 MinerU ZIP 结果时发生未知错误: {e}") from e
+        raise RuntimeError(f"Lỗi không xác định khi xử lý kết quả ZIP của MinerU: {e}") from e
 
 
 async def get_md_from_zip_url_with_inline_images_async(
@@ -440,26 +440,26 @@ async def get_md_from_zip_url_with_inline_images_async(
         md_content = await asyncio.to_thread(embed_inline_image_from_zip, response.content, filename_in_zip=filename_in_zip,
                                        encoding=encoding)
         if md_content is None:
-            raise Exception("无法从 ZIP 中提取 Markdown 文件")
+            raise Exception("Không thể trích xuất tệp Markdown từ ZIP")
         return md_content, response.content
 
 
     except httpx.HTTPStatusError as e:
         request_id = e.response.headers.get("x-request-id", "-")
         raise RuntimeError(
-            f"MinerU ZIP 下载失败: status={e.response.status_code}, "
+            f"Tải ZIP của MinerU thất bại: status={e.response.status_code}, "
             f"request_id={request_id}"
         ) from e
     except httpx.RequestError as e:
         raise RuntimeError(
-            f"MinerU ZIP 下载网络错误: type={type(e).__name__}"
+            f"Lỗi mạng khi tải ZIP của MinerU: type={type(e).__name__}"
         ) from e
     except zipfile.BadZipFile:
-        raise Exception("错误: 下载的文件不是一个有效的ZIP压缩文件或已损坏。")
+        raise Exception("Lỗi: Tệp đã tải xuống không phải tệp ZIP hợp lệ hoặc đã bị hỏng.")
     except UnicodeDecodeError:
-        raise Exception(f"错误: 无法使用 '{encoding}' 编码解码文件 '{filename_in_zip}' 的内容。")
+        raise Exception(f"Lỗi: Không thể dùng bảng mã '{encoding}' để giải mã tệp '{filename_in_zip}'.")
     except Exception as e:
-        raise RuntimeError(f"处理 MinerU ZIP 结果时发生未知错误: {e}") from e
+        raise RuntimeError(f"Lỗi không xác định khi xử lý kết quả ZIP của MinerU: {e}") from e
 
 
 if __name__ == '__main__':

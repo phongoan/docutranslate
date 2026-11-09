@@ -108,7 +108,7 @@ class DocxTranslator(AiTranslator):
                     percent = 30 + int((current / total) * 60)
                     self.progress_tracker.update(
                         percent=percent,
-                        message=f"正在翻译 ({current}/{total})"
+                        message=f"Đang dịch ({current}/{total})"
                     )
 
             agent_config = SegmentsTranslateAgentConfig(
@@ -144,7 +144,7 @@ class DocxTranslator(AiTranslator):
             office_file = msoffcrypto.OfficeFile(file_stream)
             if office_file.is_encrypted():
                 if not self.office_password:
-                    raise ValueError("此DOCX文件已加密，但未提供密码。")
+                    raise ValueError("Tệp DOCX này đã được mã hóa nhưng chưa cung cấp mật khẩu.")
                 decrypted = BytesIO()
                 office_file.load_key(password=self.office_password)
                 office_file.decrypt(decrypted)
@@ -296,7 +296,7 @@ class DocxTranslator(AiTranslator):
         elif isinstance(container, (_Cell, _Header, _Footer)):
             parent_element = container._element
         else:
-            self.logger.warning(f"跳过未知类型的容器: {type(container)}")
+            self.logger.warning(f"Bỏ qua vùng chứa thuộc loại không xác định: {type(container)}")
             return
 
         if parent_element is not None and parent_element.tag in [qn('w:footnotes'), qn('w:endnotes')]:
@@ -341,7 +341,7 @@ class DocxTranslator(AiTranslator):
                     break
 
             if first_real_run_index == -1:
-                self.logger.warning(f"无法应用翻译 '{final_text}'，因为找不到有效的run。")
+                self.logger.warning(f"Không thể áp dụng bản dịch '{final_text}' vì không tìm thấy run hợp lệ.")
                 return
 
             for i in range(first_real_run_index + 1, len(runs)):
@@ -351,7 +351,7 @@ class DocxTranslator(AiTranslator):
                     try:
                         parent_element.remove(run.element)
                     except ValueError:
-                        self.logger.debug(f"尝试删除一个不存在的run元素。这通常是安全的。")
+                        self.logger.debug(f"Cố xóa một phần tử run không tồn tại. Thường điều này an toàn.")
                         pass
 
     def _prune_unwanted_elements_from_copy(self, p_element: OxmlElement):
@@ -469,7 +469,7 @@ class DocxTranslator(AiTranslator):
                          originals: List[str]) -> bytes:
         if len(elements) != len(translated):
             self.logger.error(
-                f"翻译数量不匹配！原文: {len(originals)}, 译文: {len(translated)}. 将只处理公共部分。")
+                f"Số lượng bản dịch không khớp! Bản gốc: {len(originals)}, bản dịch: {len(translated)}. Chỉ xử lý phần chung.")
             min_len = min(len(elements), len(translated), len(originals))
             elements, translated, originals = elements[:min_len], translated[:min_len], originals[:min_len]
 
@@ -627,7 +627,7 @@ class DocxTranslator(AiTranslator):
     def translate(self, document: Document) -> Self:
         doc, elements, originals = self._pre_translate(document)
         if not originals:
-            self.logger.info("\n文档中未找到可翻译的文本内容。")
+            self.logger.info("\nKhông tìm thấy nội dung văn bản có thể dịch trong tài liệu.")
             document.content = self._after_translate(doc, elements, [], [])
             return self
 
@@ -646,7 +646,7 @@ class DocxTranslator(AiTranslator):
     async def translate_async(self, document: Document) -> Self:
         doc, elements, originals = await asyncio.to_thread(self._pre_translate, document)
         if not originals:
-            self.logger.info("\n文档中未找到可翻译的文本内容。")
+            self.logger.info("\nKhông tìm thấy nội dung văn bản có thể dịch trong tài liệu.")
             document.content = await asyncio.to_thread(self._after_translate, doc, elements, [], [])
             return self
 

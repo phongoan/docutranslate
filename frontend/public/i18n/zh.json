@@ -225,5 +225,6 @@
   "docxPasswordLabel": "文件密码 (可选)",
   "xlsxPasswordLabel": "文件密码 (可选)",
   "passwordPlaceholder": "如果文件已加密，请输入密码",
-  "passwordHelp": "如果文件已加密，请输入解密密码。未加密的文件请留空。"
+  "passwordHelp": "如果文件已加密，请输入解密密码。未加密的文件请留空。",
+  "settingsTitle": "设置"
 }

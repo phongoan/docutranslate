@@ -33,7 +33,7 @@ class DocxWorkflow(Workflow[DocxWorkflowConfig, Document, Document], HTMLExporta
     def _pre_translate(self, document_original: Document):
         suffix = document_original.suffix.lower() if document_original.suffix else ""
         if suffix != ".docx":
-            raise ValueError(f"该工作流不支持{suffix}格式，请转为.docx格式")
+            raise ValueError(f"Quy trình này không hỗ trợ định dạng {suffix}, vui lòng chuyển sang định dạng .docx")
         document = document_original.copy()
         translate_config = self.config.translator_config
         translator = DocxTranslator(translate_config)
@@ -41,20 +41,20 @@ class DocxWorkflow(Workflow[DocxWorkflowConfig, Document, Document], HTMLExporta
 
     def translate(self) -> Self:
         # 同步版本
-        self.progress_tracker.update(percent=10, message="正在准备翻译...")
+        self.progress_tracker.update(percent=10, message="Đang chuẩn bị dịch...")
         document, translator = self._pre_translate(self.document_original)
         self._translator = translator  # 保存translator引用
         translator.translate(document)
         if translator.glossary.glossary_dict:
-            self.progress_tracker.update(percent=95, message="正在保存术语表...")
+            self.progress_tracker.update(percent=95, message="Đang lưu bảng thuật ngữ...")
             self.attachment.add_document("glossary", Glossary.glossary_dict2csv(translator.glossary.glossary_dict))
-        self.progress_tracker.update(percent=100, message="翻译完成")
+        self.progress_tracker.update(percent=100, message="Dịch hoàn tất")
         self.document_translated = document
         return self
 
     async def translate_async(self) -> Self:
         # 准备阶段
-        self.progress_tracker.update(percent=10, message="正在准备翻译...")
+        self.progress_tracker.update(percent=10, message="Đang chuẩn bị dịch...")
         document, translator = self._pre_translate(self.document_original)
         self._translator = translator  # 保存translator引用
 
@@ -63,10 +63,10 @@ class DocxWorkflow(Workflow[DocxWorkflowConfig, Document, Document], HTMLExporta
 
         # 保存术语表阶段
         if translator.glossary.glossary_dict:
-            self.progress_tracker.update(percent=95, message="正在保存术语表...")
+            self.progress_tracker.update(percent=95, message="Đang lưu bảng thuật ngữ...")
             self.attachment.add_document("glossary", Glossary.glossary_dict2csv(translator.glossary.glossary_dict))
 
-        self.progress_tracker.update(percent=100, message="翻译完成")
+        self.progress_tracker.update(percent=100, message="Dịch hoàn tất")
         self.document_translated = document
         return self
 

@@ -87,19 +87,19 @@ class GlossaryAgentConfigPayload(BaseModel):
     )
     concurrent: int = Field(default=30, description="Agent的最大并发请求数。")
     timeout: int = Field(
-        default=TIMEOUT, description="非流式分片的兼容硬总时限（秒）；流式模式使用独立的滑动空闲超时。"
+        default=TIMEOUT, description="非流式分片的兼容硬总时限（ giây）；流式模式使用独立的滑动空闲超时。"
     )
     connect_timeout: float = Field(
-        default=CONNECT_TIMEOUT, description="每次建立TCP/TLS连接的超时时间（秒）。"
+        default=CONNECT_TIMEOUT, description="每次建立TCP/TLS连接的超时时间（ giây）。"
     )
     read_timeout: Optional[float] = Field(
-        default=READ_TIMEOUT, description="非流式两次网络读取之间允许的最大静默时间（秒）。"
+        default=READ_TIMEOUT, description="非流式两次网络读取之间允许的最大静默时间（ giây）。"
     )
     write_timeout: float = Field(
-        default=WRITE_TIMEOUT, description="单次网络写入操作的超时时间（秒）。"
+        default=WRITE_TIMEOUT, description="单次网络写入操作的超时时间（ giây）。"
     )
     pool_timeout: float = Field(
-        default=POOL_TIMEOUT, description="等待HTTP连接池空闲连接的超时时间（秒）。"
+        default=POOL_TIMEOUT, description="等待HTTP连接池空闲连接的超时时间（ giây）。"
     )
     thinking: ThinkingMode = Field(default="default", description="Agent的思考模式。")
     retry: int = Field(
@@ -190,19 +190,19 @@ class BaseWorkflowParams(BaseModel):
         default=TOP_P, description="LLM核采样参数。"
     )
     timeout: int = Field(
-        default=TIMEOUT, description="非流式分片的兼容硬总时限（秒）；流式模式使用独立的滑动空闲超时。"
+        default=TIMEOUT, description="非流式分片的兼容硬总时限（ giây）；流式模式使用独立的滑动空闲超时。"
     )
     connect_timeout: float = Field(
-        default=CONNECT_TIMEOUT, description="每次建立TCP/TLS连接的超时时间（秒）。"
+        default=CONNECT_TIMEOUT, description="每次建立TCP/TLS连接的超时时间（ giây）。"
     )
     read_timeout: Optional[float] = Field(
-        default=READ_TIMEOUT, description="非流式两次网络读取之间允许的最大静默时间（秒）。"
+        default=READ_TIMEOUT, description="非流式两次网络读取之间允许的最大静默时间（ giây）。"
     )
     write_timeout: float = Field(
-        default=WRITE_TIMEOUT, description="单次网络写入操作的超时时间（秒）。"
+        default=WRITE_TIMEOUT, description="单次网络写入操作的超时时间（ giây）。"
     )
     pool_timeout: float = Field(
-        default=POOL_TIMEOUT, description="等待HTTP连接池空闲连接的超时时间（秒）。"
+        default=POOL_TIMEOUT, description="等待HTTP连接池空闲连接的超时时间（ giây）。"
     )
     thinking: ThinkingMode = Field(
         default=THINKING,
@@ -559,7 +559,7 @@ class XlsxWorkflowParams(BaseWorkflowParams):
     )
     translate_regions: Optional[List[str]] = Field(
         None,
-        description="指定翻译区域列表。示例: ['Sheet1!A1:B10', 'C:D', 'E5']。如果不指定表名 (如 'C:D')，则应用于所有表。如果为 None，则翻译整个文件中的所有文本。",
+        description="指定翻译vùng列表。示例: ['Sheet1!A1:B10', 'C:D', 'E5']。如果不指定表名 (如 'C:D')，则应用于所有表。如果为 None，则翻译整个文件中的所有文本。",
         examples=[None],
     )
     office_password: Optional[str] = Field(

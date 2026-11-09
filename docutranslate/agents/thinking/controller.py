@@ -67,8 +67,8 @@ class ReasoningController:
             data.update(decision.updates)
             return self._once(decision.warning)
         return self._once(
-            f"模型 {self.model_id} 使用已缓存的思考参数兼容降级；"
-            "将在缓存过期后重新探测。"
+            f"Mô hình {self.model_id} dùng tham số suy nghĩ tương thích hạ cấp đã lưu cache; "
+            "sẽ dò lại sau khi cache hết hạn."
         )
 
     def _once(self, warning: str | None) -> str | None:
@@ -116,8 +116,8 @@ class ReasoningController:
             _rejected_capabilities[self.cache_key] = time.monotonic()
         fields = ", ".join(sorted(removable))
         warning = (
-            f"接口拒绝模型 {self.model_id} 的思考参数 ({fields})，"
-            "本次移除后重试，并已缓存兼容结果。"
+            f"Giao diện từ chối tham số suy nghĩ của mô hình {self.model_id} ({fields}), "
+            "lần này sẽ gỡ bỏ rồi thử lại và đã lưu cache kết quả tương thích."
         )
         return fallback, warning
 

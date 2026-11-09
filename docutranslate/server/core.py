@@ -454,7 +454,7 @@ class TranslationService:
         task_logger.addHandler(task_handler)
 
         task_logger.info(
-            f"后台翻译任务开始: 文件 '{original_filename}', 工作流: '{payload.workflow_type}'"
+            f"后台翻译任务开始: Tệp '{original_filename}', 工作流: '{payload.workflow_type}'"
         )
         task_state["status_message"] = f"正在处理 '{original_filename}'..."
 
@@ -486,7 +486,7 @@ class TranslationService:
             workflow.read_bytes(content=file_contents, stem=file_stem, suffix=file_suffix)
             await workflow.translate_async()
 
-            task_logger.info("翻译完成，正在生成临时结果文件...")
+            task_logger.info("Dịch hoàn tất，正在生成临时结果文件...")
             temp_dir = tempfile.mkdtemp(prefix=f"docutranslate_{task_id}_")
             task_state["temp_dir"] = temp_dir
             downloadable_files = {}
@@ -562,7 +562,7 @@ class TranslationService:
 
             task_state.update(
                 {
-                    "status_message": f"翻译完成！用时 {duration:.2f} 秒。",
+                    "status_message": f"Dịch hoàn tất！用时 {duration:.2f} giây。",
                     "download_ready": True,
                     "error_flag": False,
                     "progress_percent": 100,
@@ -572,13 +572,13 @@ class TranslationService:
                     "statistics": statistics,
                 }
             )
-            task_logger.info(f"翻译完成，用时 {duration:.2f} 秒。")
+            task_logger.info(f"Dịch hoàn tất，用时 {duration:.2f} giây。")
 
         except asyncio.CancelledError:
             end_time = time.time()
             duration = end_time - task_state["task_start_time"]
             task_logger.info(
-                f"翻译任务 '{original_filename}' 已被取消 (用时 {duration:.2f} 秒)."
+                f"翻译任务 '{original_filename}' 已被取消 (用时 {duration:.2f} giây)."
             )
             # 尝试获取已有的统计数据
             statistics = {}
@@ -599,7 +599,7 @@ class TranslationService:
                 temp_dir = None
             task_state.update(
                 {
-                    "status_message": f"翻译任务已取消 (用时 {duration:.2f} 秒).",
+                    "status_message": f"翻译任务已取消 (用时 {duration:.2f} giây).",
                     "error_flag": False,
                     "cancelled": True,
                     "download_ready": False,
@@ -623,7 +623,7 @@ class TranslationService:
                 pass
             task_state.update(
                 {
-                    "status_message": f"翻译过程中发生错误 (用时 {duration:.2f} 秒): {mask_secrets(str(e))}",
+                    "status_message": f"翻译过程中发生错误 (用时 {duration:.2f} giây): {mask_secrets(str(e))}",
                     "error_flag": True,
                     "download_ready": False,
                     "task_end_time": end_time,
@@ -807,7 +807,7 @@ class TranslationService:
                 done, pending = await asyncio.wait({task_ref}, timeout=5.0)
                 if pending:
                     global_logger.warning("[%s] 取消后任务清理仍未完成", task_id)
-                    message_parts.append("任务清理未在 5 秒内完成。")
+                    message_parts.append("任务清理未在 5 giây内完成。")
 
         if task_state:
             temp_dir = task_state.get("temp_dir")
