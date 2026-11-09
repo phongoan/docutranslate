@@ -756,7 +756,7 @@ class TranslationService:
         """Cancel a running task."""
         task_state = self.tasks_state.get(task_id)
         if not task_state:
-            raise HTTPException(status_code=404, detail=f"Không tìm thấy hàng đợi nhật ký của ID tác vụ '{task_id}'.")
+            raise HTTPException(status_code=404, detail=f"Không tìm thấy ID tác vụ '{task_id}'.")
         if (
             not task_state
             or not task_state["is_processing"]
