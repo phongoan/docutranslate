@@ -26,7 +26,7 @@ def detect_workflow(filename: str) -> str:
     from pathlib import Path
     suffix = Path(filename).suffix.lower()
     if suffix in LEGACY_OFFICE_SUFFIXES:
-        raise ValueError(f"不支持 {suffix} 格式，请先转换为 {LEGACY_OFFICE_SUFFIXES[suffix]} 格式")
+        raise ValueError(f"Không hỗ trợ định dạng {suffix}, vui lòng chuyển đổi sang định dạng {LEGACY_OFFICE_SUFFIXES[suffix]}")
     return INPUT_WORKFLOWS.get(suffix, "txt")
 
 

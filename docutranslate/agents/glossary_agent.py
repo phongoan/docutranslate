@@ -57,7 +57,7 @@ def get_original_segments(prompt: str):
     if match:
         return match.group(1)
     else:
-        raise ValueError("无法从prompt中提取初始文本")
+        raise ValueError("Không thể trích xuất văn bản gốc từ prompt")
 
 
 def get_target_segments(result: str):
@@ -150,13 +150,13 @@ class GlossaryAgent(Agent):
         repaired_result = get_target_segments(result)
         if not repaired_result:
             if origin_prompt.strip() != "":
-                logger.error("result为空值但原文不为空")
-                raise AgentResultError("result为空值但原文不为空")
+                logger.error("result rỗng nhưng văn bản gốc không rỗng")
+                raise AgentResultError("result rỗng nhưng văn bản gốc không rỗng")
             return []
         try:
             if not isinstance(repaired_result, list):
                 raise AgentResultError(
-                    "GlossaryAgent返回结果不是list的json形式, "
+                    "GlossaryAgent trả về kết quả không phải dạng json list, "
                     f"type={type(repaired_result).__name__}, chars={len(result)}"
                 )
             # 过滤和展平：只保留 dict 类型的元素
@@ -170,13 +170,13 @@ class GlossaryAgent(Agent):
                 return result
             return flatten_and_filter(repaired_result)
         except (RuntimeError, JSONDecodeError) as e:
-            raise AgentResultError(f"结果不能正确解析: {e.__repr__()}")
+            raise AgentResultError(f"Không thể phân tích kết quả: {e.__repr__()}")
 
     def _error_result_handler(self, origin_prompt: str, logger: Logger):
         try:
             origin_prompt = get_original_segments(origin_prompt)
         except ValueError as e:
-            logger.error(f"无法从prompt中提取初始文本: {e}")
+            logger.error(f"Không thể trích xuất văn bản gốc từ prompt: {e}")
             return []
         if origin_prompt.strip() == "":
             return []
@@ -184,12 +184,12 @@ class GlossaryAgent(Agent):
             return json_repair.loads(origin_prompt)
         except (RuntimeError, JSONDecodeError):
             logger.error(
-                "原始prompt不是有效的json格式: chars=%d", len(origin_prompt)
+                "prompt gốc không phải định dạng json hợp lệ: chars=%d", len(origin_prompt)
             )
             return []  # 如果原始prompt也无效，返回空列表
 
     def send_segments(self, segments: list[str], chunk_size: int):
-        self.logger.info(f"开始提取术语表,to_lang:{self.to_lang}")
+        self.logger.info(f"Bắt đầu trích xuất bảng thuật ngữ, to_lang:{self.to_lang}")
         result = {}
         indexed_originals, chunks, merged_indices_list = segments2json_chunks(segments, chunk_size)
         prompts = [generate_prompt(json.dumps(chunk, ensure_ascii=False), self.to_lang) for chunk in chunks]
@@ -200,7 +200,7 @@ class GlossaryAgent(Agent):
             try:
                 if not isinstance(chunk, list):
                     self.logger.error(
-                        "接收到的chunk不是有效列表，已跳过: type=%s",
+                        "chunk nhận được không phải danh sách hợp lệ, đã bỏ qua: type=%s",
                         type(chunk).__name__,
                     )
                     continue
@@ -208,16 +208,16 @@ class GlossaryAgent(Agent):
                 result = glossary_dict | result
             except (TypeError, KeyError) as e:
                 self.logger.error(
-                    "处理glossary chunk时发生键或类型错误，已跳过: %r", e
+                    "Lỗi khóa hoặc kiểu khi xử lý glossary chunk, đã bỏ qua: %r", e
                 )
             except Exception as e:
-                self.logger.error(f"处理glossary chunk时发生未知错误: {e.__repr__()}")
+                self.logger.error(f"Lỗi không xác định khi xử lý glossary chunk: {e.__repr__()}")
 
-        self.logger.info("术语表提取完成")
+        self.logger.info("Đã trích xuất xong bảng thuật ngữ")
         return result
 
     async def send_segments_async(self, segments: list[str], chunk_size: int):
-        self.logger.info(f"开始提取术语表,to_lang:{self.to_lang}")
+        self.logger.info(f"Bắt đầu trích xuất bảng thuật ngữ, to_lang:{self.to_lang}")
         result = {}
         indexed_originals, chunks, merged_indices_list = await asyncio.to_thread(segments2json_chunks, segments,
                                                                                  chunk_size)
@@ -229,7 +229,7 @@ class GlossaryAgent(Agent):
             try:
                 if not isinstance(chunk, list):
                     self.logger.error(
-                        "接收到的chunk不是有效列表，已跳过: type=%s",
+                        "chunk nhận được không phải danh sách hợp lệ, đã bỏ qua: type=%s",
                         type(chunk).__name__,
                     )
                     continue
@@ -237,10 +237,10 @@ class GlossaryAgent(Agent):
                 result = result | glossary_dict
             except (TypeError, KeyError) as e:
                 self.logger.error(
-                    "处理glossary chunk时发生键或类型错误，已跳过: %r", e
+                    "Lỗi khóa hoặc kiểu khi xử lý glossary chunk, đã bỏ qua: %r", e
                 )
             except Exception as e:
-                self.logger.error(f"处理glossary chunk时发生未知错误: {e.__repr__()}")
+                self.logger.error(f"Lỗi không xác định khi xử lý glossary chunk: {e.__repr__()}")
 
-        self.logger.info("术语表提取完成")
+        self.logger.info("Đã trích xuất xong bảng thuật ngữ")
         return result

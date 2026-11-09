@@ -72,7 +72,7 @@ class TXTTranslator(AiTranslator):
                     percent = 30 + int((current / total) * 60)
                     self.progress_tracker.update(
                         percent=percent,
-                        message=f"正在翻译 ({current}/{total})"
+                        message=f"Đang dịch ({current}/{total})"
                     )
 
             agent_config = SegmentsTranslateAgentConfig(
@@ -122,14 +122,14 @@ class TXTTranslator(AiTranslator):
         # 使用 charset_normalizer 自动检测编码
         result = charset_normalizer.from_bytes(document.content).best()
         if result is None:
-            self.logger.error("无法检测TXT文件编码")
+            self.logger.error("Không thể phát hiện bảng mã của tệp TXT")
             return []
         detected_encoding = result.encoding
-        self.logger.info(f"检测到TXT文件编码: {detected_encoding}")
+        self.logger.info(f"Đã phát hiện bảng mã tệp TXT: {detected_encoding}")
         try:
             txt_content = document.content.decode(detected_encoding)
         except (UnicodeDecodeError, AttributeError) as e:
-            self.logger.error(f"无法使用检测到的编码 {detected_encoding} 解码文件: {e}")
+            self.logger.error(f"Không thể dùng bảng mã đã phát hiện {detected_encoding} để giải mã tệp: {e}")
             return []
 
         if self.segment_mode == "line":
@@ -185,7 +185,7 @@ class TXTTranslator(AiTranslator):
             elif self.insert_mode == "prepend":
                 processed_lines.append(translated_line.strip() + self.separator + original_line.strip())
             else:
-                self.logger.error(f"不正确的insert_mode参数: '{self.insert_mode}'")
+                self.logger.error(f"Tham số insert_mode không đúng: '{self.insert_mode}'")
                 processed_lines.append(translated_line)
 
         return "\n".join(processed_lines).encode('utf-8')
@@ -232,7 +232,7 @@ class TXTTranslator(AiTranslator):
         elif self.insert_mode == "prepend":
             result_text = translated_text + self.separator + original_text
         else:
-            self.logger.error(f"不正确的insert_mode参数: '{self.insert_mode}'")
+            self.logger.error(f"Tham số insert_mode không đúng: '{self.insert_mode}'")
             result_text = translated_text
 
         return result_text.encode('utf-8')
@@ -244,7 +244,7 @@ class TXTTranslator(AiTranslator):
         original_segments = self._pre_translate(document)
 
         if not original_segments:
-            self.logger.info("\n文件中没有找到需要翻译的文本内容。")
+            self.logger.info("\nKhông tìm thấy nội dung văn bản cần dịch trong tệp.")
             return self
 
         texts_to_translate = [text for text in original_segments if text.strip()]
@@ -279,7 +279,7 @@ class TXTTranslator(AiTranslator):
         original_segments = await asyncio.to_thread(self._pre_translate, document)
 
         if not original_segments:
-            self.logger.info("\n文件中没有找到需要翻译的文本内容。")
+            self.logger.info("\nKhông tìm thấy nội dung văn bản cần dịch trong tệp.")
             return self
 
         texts_to_translate = [text for text in original_segments if text.strip()]

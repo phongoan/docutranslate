@@ -42,7 +42,7 @@ class AssWorkflow(Workflow[AssWorkflowConfig, Document, Document], HTMLExportabl
 
     def translate(self) -> Self:
         # 准备阶段
-        self.progress_tracker.update(percent=10, message="正在准备翻译...")
+        self.progress_tracker.update(percent=10, message="Đang chuẩn bị dịch...")
         document, translator=self._pre_translate(self.document_original)
         self._translator = translator  # 保存translator引用
 
@@ -51,16 +51,16 @@ class AssWorkflow(Workflow[AssWorkflowConfig, Document, Document], HTMLExportabl
 
         # 保存术语表阶段
         if translator.glossary.glossary_dict:
-            self.progress_tracker.update(percent=95, message="正在保存术语表...")
+            self.progress_tracker.update(percent=95, message="Đang lưu bảng thuật ngữ...")
             self.attachment.add_document("glossary", Glossary.glossary_dict2csv(translator.glossary.glossary_dict))
 
-        self.progress_tracker.update(percent=100, message="翻译完成")
+        self.progress_tracker.update(percent=100, message="Dịch hoàn tất")
         self.document_translated = document
         return self
 
     async def translate_async(self) -> Self:
         # 准备阶段
-        self.progress_tracker.update(percent=10, message="正在准备翻译...")
+        self.progress_tracker.update(percent=10, message="Đang chuẩn bị dịch...")
         document, translator = self._pre_translate(self.document_original)
         self._translator = translator  # 保存translator引用
 
@@ -69,10 +69,10 @@ class AssWorkflow(Workflow[AssWorkflowConfig, Document, Document], HTMLExportabl
 
         # 保存术语表阶段
         if translator.glossary.glossary_dict:
-            self.progress_tracker.update(percent=95, message="正在保存术语表...")
+            self.progress_tracker.update(percent=95, message="Đang lưu bảng thuật ngữ...")
             self.attachment.add_document("glossary", Glossary.glossary_dict2csv(translator.glossary.glossary_dict))
 
-        self.progress_tracker.update(percent=100, message="翻译完成")
+        self.progress_tracker.update(percent=100, message="Dịch hoàn tất")
         self.document_translated = document
         return self
 

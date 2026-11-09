@@ -58,13 +58,13 @@ class GlossaryAgentConfigPayload(BaseModel):
     base_url: str = Field(
         ...,
         validation_alias=AliasChoices("base_url", "baseurl"),
-        description="用于术语表生成的Agent的LLM API基础URL。",
+        description="URL cơ sở của LLM API dùng cho Agent tạo thuật ngữ.",
         examples=["https://api.openai.com/v1"],
     )
     api_key: str = Field(
         default="xx",
         validation_alias=AliasChoices("api_key", "key"),
-        description="用于术语表生成的Agent的LLM API密钥（默认为xx）。",
+        description="Khóa LLM API dùng cho Agent tạo thuật ngữ (mặc định là xx).",
         examples=["sk-agent-api-key"],
     )
 
@@ -74,61 +74,61 @@ class GlossaryAgentConfigPayload(BaseModel):
         return v if v and v.strip() else "xx"
 
     model_id: str = Field(
-        ..., description="用于术语表生成的Agent的模型ID。", examples=["gpt-4-turbo"]
+        ..., description="ID mô hình dùng cho Agent tạo thuật ngữ.", examples=["gpt-4-turbo"]
     )
     to_lang: str = Field(
-        ..., description="术语表生成的目标语言。", examples=["简体中文", "English"]
+        ..., description="Ngôn ngữ đích khi tạo thuật ngữ.", examples=["Tiếng Việt", "English"]
     )
     temperature: float = Field(
-        default=0.7, description="用于术语表生成的Agent的温度参数。"
+        default=0.7, description="Tham số nhiệt độ (temperature) của Agent tạo thuật ngữ."
     )
     top_p: float = Field(
-        default=0.9, description="用于术语表生成的Agent的核采样参数。"
+        default=0.9, description="Tham số lấy mẫu nhân (top_p) của Agent tạo thuật ngữ."
     )
-    concurrent: int = Field(default=30, description="Agent的最大并发请求数。")
+    concurrent: int = Field(default=30, description="Số yêu cầu đồng thời tối đa của Agent.")
     timeout: int = Field(
-        default=TIMEOUT, description="非流式分片的兼容硬总时限（秒）；流式模式使用独立的滑动空闲超时。"
+        default=TIMEOUT, description="Tổng thời hạn cứng tương thích cho từng phân đoạn ở chế độ không streaming (giây); chế độ streaming dùng thời gian chờ nhàn rỗi trượt riêng."
     )
     connect_timeout: float = Field(
-        default=CONNECT_TIMEOUT, description="每次建立TCP/TLS连接的超时时间（秒）。"
+        default=CONNECT_TIMEOUT, description="Thời gian chờ mỗi lần thiết lập kết nối TCP/TLS (giây)."
     )
     read_timeout: Optional[float] = Field(
-        default=READ_TIMEOUT, description="非流式两次网络读取之间允许的最大静默时间（秒）。"
+        default=READ_TIMEOUT, description="Thời gian im lặng tối đa cho phép giữa hai lần đọc mạng ở chế độ không streaming (giây)."
     )
     write_timeout: float = Field(
-        default=WRITE_TIMEOUT, description="单次网络写入操作的超时时间（秒）。"
+        default=WRITE_TIMEOUT, description="Thời gian chờ cho một thao tác ghi mạng (giây)."
     )
     pool_timeout: float = Field(
-        default=POOL_TIMEOUT, description="等待HTTP连接池空闲连接的超时时间（秒）。"
+        default=POOL_TIMEOUT, description="Thời gian chờ kết nối rảnh trong nhóm kết nối HTTP (giây)."
     )
-    thinking: ThinkingMode = Field(default="default", description="Agent的思考模式。")
+    thinking: ThinkingMode = Field(default="default", description="Chế độ suy nghĩ của Agent.")
     retry: int = Field(
-        default=RETRY, description="分块失败后的最大重试次数。"
+        default=RETRY, description="Số lần thử lại tối đa sau khi một khối thất bại."
     )
     system_proxy_enable: bool = Field(
         default=SYSTEM_PROXY_ENABLE,
-        description="是否使用系统代理",
+        description="Có sử dụng proxy hệ thống hay không",
         examples=[True, False],
     )
     # 修改: 默认值改为 "" 以避免 Swagger 显示 "string"
     custom_prompt: Optional[str] = Field(
-        default="", description="生成术语表的用户自定义提示词"
+        default="", description="Prompt tùy chỉnh của người dùng để tạo thuật ngữ"
     )
     force_json: bool = Field(
-        default=False, description="强制Agent输出JSON格式的术语表。"
+        default=False, description="Bắt buộc Agent xuất thuật ngữ ở định dạng JSON."
     )
     # 修改: 增加 examples=[None]
     rpm: Optional[int] = Field(
-        default=None, description="RPM限制 (Requests Per Minute)", examples=[None]
+        default=None, description="Giới hạn RPM (Requests Per Minute)", examples=[None]
     )
     tpm: Optional[int] = Field(
-        default=None, description="TPM限制 (Tokens Per Minute)", examples=[None]
+        default=None, description="Giới hạn TPM (Tokens Per Minute)", examples=[None]
     )
     provider: Optional[ProviderType] = Field(
-        default=None, description="LLM供应商标识", examples=[None]
+        default=None, description="Mã định danh nhà cung cấp LLM", examples=[None]
     )
     extra_body: Optional[str] = Field(
-        default="", description="JSON字符串格式的额外请求体参数，会合并到API请求中"
+        default="", description="Tham số bổ sung của thân yêu cầu ở dạng chuỗi JSON, sẽ được gộp vào yêu cầu API"
     )
 
     streaming: bool = LLM_STREAMING
@@ -147,19 +147,19 @@ class BaseWorkflowParams(BaseModel):
     html_exporter_options: Optional[HTMLExportOptions] = None
     skip_translate: bool = Field(
         default=False,
-        description="是否跳过翻译步骤。如果为True，则仅执行文档解析和格式转换。",
+        description="Có bỏ qua bước dịch hay không. Nếu là True, chỉ thực hiện phân tích tài liệu và chuyển đổi định dạng.",
     )
     # 修改: 默认值改为 ""
     base_url: Optional[str] = Field(
         default="",
         validation_alias=AliasChoices("base_url", "baseurl"),
-        description="LLM API的基础URL。当 `skip_translate` 为 `False` 时必填。",
+        description="URL cơ sở của LLM API. Bắt buộc khi `skip_translate` là `False`.",
         examples=["https://api.openai.com/v1"],
     )
     api_key: str = Field(
         default="xx",
         validation_alias=AliasChoices("api_key", "key"),
-        description="LLM API的密钥（可选，默认为xx）。",
+        description="Khóa LLM API (tùy chọn, mặc định là xx).",
         examples=["sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxx"],
     )
 
@@ -171,82 +171,82 @@ class BaseWorkflowParams(BaseModel):
     # 修改: 默认值改为 ""
     model_id: Optional[str] = Field(
         default="",
-        description="要使用的LLM模型ID。当 `skip_translate` 为 `False` 时必填。",
+        description="ID mô hình LLM cần sử dụng. Bắt buộc khi `skip_translate` là `False`.",
         examples=["gpt-4o"],
     )
     to_lang: str = Field(
-        default=TO_LANG, description="目标翻译语言。", examples=["简体中文", "English"]
+        default=TO_LANG, description="Ngôn ngữ đích của bản dịch.", examples=["Tiếng Việt", "English"]
     )
     chunk_size: int = Field(
-        default=CHUNK_SIZE, description="文本分割的块大小（UTF-8 字节，不是字符数）。"
+        default=CHUNK_SIZE, description="Kích thước khối khi chia văn bản (byte UTF-8, không phải số ký tự)."
     )
     concurrent: int = Field(
-        default=CONCURRENT, description="并发请求数。"
+        default=CONCURRENT, description="Số yêu cầu đồng thời."
     )
     temperature: float = Field(
-        default=TEMPERATURE, description="LLM温度参数。"
+        default=TEMPERATURE, description="Tham số nhiệt độ (temperature) của LLM."
     )
     top_p: float = Field(
-        default=TOP_P, description="LLM核采样参数。"
+        default=TOP_P, description="Tham số lấy mẫu nhân (top_p) của LLM."
     )
     timeout: int = Field(
-        default=TIMEOUT, description="非流式分片的兼容硬总时限（秒）；流式模式使用独立的滑动空闲超时。"
+        default=TIMEOUT, description="Tổng thời hạn cứng tương thích cho từng phân đoạn ở chế độ không streaming (giây); chế độ streaming dùng thời gian chờ nhàn rỗi trượt riêng."
     )
     connect_timeout: float = Field(
-        default=CONNECT_TIMEOUT, description="每次建立TCP/TLS连接的超时时间（秒）。"
+        default=CONNECT_TIMEOUT, description="Thời gian chờ mỗi lần thiết lập kết nối TCP/TLS (giây)."
     )
     read_timeout: Optional[float] = Field(
-        default=READ_TIMEOUT, description="非流式两次网络读取之间允许的最大静默时间（秒）。"
+        default=READ_TIMEOUT, description="Thời gian im lặng tối đa cho phép giữa hai lần đọc mạng ở chế độ không streaming (giây)."
     )
     write_timeout: float = Field(
-        default=WRITE_TIMEOUT, description="单次网络写入操作的超时时间（秒）。"
+        default=WRITE_TIMEOUT, description="Thời gian chờ cho một thao tác ghi mạng (giây)."
     )
     pool_timeout: float = Field(
-        default=POOL_TIMEOUT, description="等待HTTP连接池空闲连接的超时时间（秒）。"
+        default=POOL_TIMEOUT, description="Thời gian chờ kết nối rảnh trong nhóm kết nối HTTP (giây)."
     )
     thinking: ThinkingMode = Field(
         default=THINKING,
-        description="Agent的思考模式。",
+        description="Chế độ suy nghĩ của Agent.",
         examples=["default", "enable", "disable"],
     )
     retry: int = Field(
         default=RETRY,
-        description="某个分块翻译失败后的最大重试次数。",
+        description="Số lần thử lại tối đa sau khi dịch một khối thất bại.",
     )
     system_proxy_enable: bool = Field(
         default=SYSTEM_PROXY_ENABLE,
-        description="是否使用系统代理",
+        description="Có sử dụng proxy hệ thống hay không",
         examples=[True, False],
     )
     # 修改: 默认值改为 ""
     custom_prompt: Optional[str] = Field(
-        default=CUSTOM_PROMPT, description="用户自定义的翻译Prompt。", alias="custom_prompt"
+        default=CUSTOM_PROMPT, description="Prompt dịch tùy chỉnh của người dùng.", alias="custom_prompt"
     )
     glossary_dict: Optional[Dict[str, str]] = Field(
-        None, description="术语表字典，key为原文，value为译文。", examples=[None]
+        None, description="Từ điển thuật ngữ, key là bản gốc, value là bản dịch.", examples=[None]
     )
     glossary_generate_enable: bool = Field(
-        default=GLOSSARY_GENERATE_ENABLE, description="是否开启术语表自动生成。"
+        default=GLOSSARY_GENERATE_ENABLE, description="Có bật tự động tạo thuật ngữ hay không."
     )
     glossary_agent_config: Optional[GlossaryAgentConfigPayload] = Field(
         None,
-        description="用于术语表生成的Agent的配置。如果 `glossary_generate_enable` 为 `True`，此项必填。",
+        description="Cấu hình của Agent tạo thuật ngữ. Bắt buộc nếu `glossary_generate_enable` là `True`.",
         examples=[None],
     )
     force_json: bool = Field(
-        default=FORCE_JSON, description="应输出json格式时强制ai输出json"
+        default=FORCE_JSON, description="Bắt buộc AI xuất JSON khi cần đầu ra ở định dạng JSON"
     )
     rpm: Optional[int] = Field(
-        default=RPM, description="RPM限制 (Requests Per Minute)", examples=[None]
+        default=RPM, description="Giới hạn RPM (Requests Per Minute)", examples=[None]
     )
     tpm: Optional[int] = Field(
-        default=TPM, description="TPM限制 (Tokens Per Minute)", examples=[None]
+        default=TPM, description="Giới hạn TPM (Tokens Per Minute)", examples=[None]
     )
     provider: Optional[ProviderType] = Field(
-        default=PROVIDER, description="LLM供应商标识", examples=[None]
+        default=PROVIDER, description="Mã định danh nhà cung cấp LLM", examples=[None]
     )
     extra_body: Optional[str] = Field(
-        default=EXTRA_BODY, description="JSON字符串格式的额外请求体参数，会合并到API请求中"
+        default=EXTRA_BODY, description="Tham số bổ sung của thân yêu cầu ở dạng chuỗi JSON, sẽ được gộp vào yêu cầu API"
     )
 
     streaming: bool = LLM_STREAMING
@@ -315,12 +315,12 @@ class BaseWorkflowParams(BaseModel):
                 if not (values.get("base_url") or values.get("baseurl")):
                     if values.get("workflow_type") != "auto":
                         raise ValueError(
-                            "当 `skip_translate` 为 `False` 时, `base_url` 或 `baseurl` 字段是必须的。"
+                            "Khi `skip_translate` là `False`, trường `base_url` hoặc `baseurl` là bắt buộc."
                         )
                 if not values.get("model_id"):
                     if values.get("workflow_type") != "auto":
                         raise ValueError(
-                            "当 `skip_translate` 为 `False` 时, `model_id` 字段是必须的。"
+                            "Khi `skip_translate` là `False`, trường `model_id` là bắt buộc."
                         )
         return values
 
@@ -372,24 +372,24 @@ class UniversalParamsMixin(BaseModel):
 
 # 2. 修改 AutoWorkflowParams，使其继承 UniversalParamsMixin
 class AutoWorkflowParams(BaseWorkflowParams, UniversalParamsMixin):
-    workflow_type: Literal["auto"] = Field(..., description="根据文件后缀自动选择工作流。")
+    workflow_type: Literal["auto"] = Field(..., description="Tự động chọn quy trình theo phần mở rộng của tệp.")
     model_config = ConfigDict(extra="allow")
 
 
 class MarkdownWorkflowParams(BaseWorkflowParams):
     workflow_type: Literal["markdown_based"] = Field(
-        ..., description="指定使用基于Markdown的翻译工作流。"
+        ..., description="Chỉ định dùng quy trình dịch dựa trên Markdown."
     )
     convert_engine: Literal[
         "identity", "mineru", "mineru_deploy"
     ] = Field(
         CONVERT_ENGINE,
-        description="选择将文件解析为markdown的引擎。'mineru_deploy' 适用于本地部署的 MinerU 服务。如果输入文件是.md，此项可为`identity`或不传。",
+        description="Chọn engine phân tích tệp thành markdown. 'mineru_deploy' dành cho dịch vụ MinerU triển khai cục bộ. Nếu tệp đầu vào là .md, mục này có thể là `identity` hoặc bỏ trống.",
         examples=["identity", "mineru", "mineru_deploy"],
     )
     md2docx_engine: Literal["python", "pandoc", "auto"] | None = Field(
         MD2DOCX_ENGINE,
-        description="选择将markdown导出为docx的引擎。'python'使用纯Python实现，'pandoc'使用pandoc命令，'auto'自动选择（优先使用pandoc），None表示不生成docx。",
+        description="Chọn engine xuất markdown sang docx. 'python' dùng bản cài đặt thuần Python, 'pandoc' dùng lệnh pandoc, 'auto' tự động chọn (ưu tiên pandoc), None nghĩa là không tạo docx.",
         examples=["python", "pandoc", "auto"],
     )
 
@@ -399,14 +399,14 @@ class MarkdownWorkflowParams(BaseWorkflowParams):
     # 修改: 默认值改为 ""
     mineru_token: Optional[str] = Field(
         default=MINERU_TOKEN or "",
-        description="[仅当 convert_engine='mineru'] 必填的API令牌。",
+        description="[Chỉ khi convert_engine='mineru'] API token bắt buộc.",
     )
     model_version: Literal["pipeline", "vlm", "MinerU-HTML"] = Field(
-        MODEL_VERSION, description="[仅当 convert_engine='mineru'] Mineru Cloud模型的版本。"
+        MODEL_VERSION, description="[Chỉ khi convert_engine='mineru'] Phiên bản mô hình Mineru Cloud."
     )
     formula_ocr: bool = Field(
         FORMULA_OCR,
-        description="[仅当 convert_engine='mineru'] 是否对公式进行OCR识别。",
+        description="[Chỉ khi convert_engine='mineru'] Có nhận dạng OCR công thức hay không.",
     )
     mineru_language: Literal[
         "ch", "ch_server", "en", "japan", "korean", "chinese_cht",
@@ -414,19 +414,19 @@ class MarkdownWorkflowParams(BaseWorkflowParams):
         "east_slavic", "devanagari"
     ] = Field(
         MINERU_LANGUAGE,
-        description="[仅当 convert_engine='mineru'] 识别语言选项，默认 'ch'（中英文）。",
+        description="[Chỉ khi convert_engine='mineru'] Tùy chọn ngôn ngữ nhận dạng, mặc định 'ch' (Trung và Anh).",
     )
 
 
     # -- For "mineru_deploy" (Local Deployment) --
     mineru_deploy_base_url: Optional[str] = Field(
         MINERU_DEPLOY_BASE_URL,
-        description="[仅当 convert_engine='mineru_deploy'] 本地部署的 MinerU 服务地址。",
+        description="[Chỉ khi convert_engine='mineru_deploy'] Địa chỉ dịch vụ MinerU triển khai cục bộ.",
     )
     # --- UPDATED BACKEND LIST ---
     mineru_deploy_api_key: Optional[str] = Field(
         default=None, repr=False,
-        description="[仅当 convert_engine='mineru_deploy'] 可选的服务鉴权密钥；空值回退到环境变量。",
+        description="[Chỉ khi convert_engine='mineru_deploy'] Khóa xác thực dịch vụ (tùy chọn); nếu để trống sẽ dùng biến môi trường.",
         json_schema_extra={"writeOnly": True},
     )
     mineru_deploy_backend: Literal[
@@ -440,43 +440,43 @@ class MarkdownWorkflowParams(BaseWorkflowParams):
         "hybrid-http-client"
     ] = Field(
         MINERU_DEPLOY_BACKEND,
-        description="[仅当 convert_engine='mineru_deploy'] 本地部署的 MinerU 服务使用的后端。",
+        description="[Chỉ khi convert_engine='mineru_deploy'] Backend mà dịch vụ MinerU triển khai cục bộ sử dụng.",
     )
     mineru_deploy_effort: Literal["medium", "high"] = Field(
         MINERU_DEPLOY_EFFORT,
-        description="[仅当使用 hybrid backend] 解析强度：medium 更快，high 精度更高并支持图像分析。",
+        description="[Chỉ khi dùng hybrid backend] Cường độ phân tích: medium nhanh hơn, high chính xác hơn và hỗ trợ phân tích hình ảnh.",
     )
     mineru_deploy_parse_method: Literal["auto", "txt", "ocr"] = Field(
         MINERU_DEPLOY_PARSE_METHOD,
-        description="[仅当 convert_engine='mineru_deploy'] 解析方法: auto, txt, ocr"
+        description="[Chỉ khi convert_engine='mineru_deploy'] Phương pháp phân tích: auto, txt, ocr"
     )
     mineru_deploy_table_enable: bool = Field(
         MINERU_DEPLOY_TABLE_ENABLE,
-        description="[仅当 convert_engine='mineru_deploy'] 本地部署的服务是否启用表格解析。",
+        description="[Chỉ khi convert_engine='mineru_deploy'] Dịch vụ triển khai cục bộ có bật phân tích bảng hay không.",
     )
     mineru_deploy_formula_enable: bool = Field(
         MINERU_DEPLOY_FORMULA_ENABLE,
-        description="[仅当 convert_engine='mineru_deploy'] 本地部署的服务是否启用公式解析。",
+        description="[Chỉ khi convert_engine='mineru_deploy'] Dịch vụ triển khai cục bộ có bật phân tích công thức hay không.",
     )
     mineru_deploy_image_analysis: bool = Field(
         MINERU_DEPLOY_IMAGE_ANALYSIS,
-        description="[仅当 convert_engine='mineru_deploy'] 是否启用图片/图表分析；Hybrid medium 会由 MinerU 自动关闭。",
+        description="[Chỉ khi convert_engine='mineru_deploy'] Có bật phân tích hình ảnh/biểu đồ hay không; Hybrid medium sẽ do MinerU tự động tắt.",
     )
     mineru_deploy_start_page_id: int = Field(
-        MINERU_DEPLOY_START_PAGE_ID, description="[仅当 convert_engine='mineru_deploy'] 起始解析页面。"
+        MINERU_DEPLOY_START_PAGE_ID, description="[Chỉ khi convert_engine='mineru_deploy'] Trang bắt đầu phân tích."
     )
     mineru_deploy_end_page_id: int = Field(
-        MINERU_DEPLOY_END_PAGE_ID, description="[仅当 convert_engine='mineru_deploy'] 结束解析页面。"
+        MINERU_DEPLOY_END_PAGE_ID, description="[Chỉ khi convert_engine='mineru_deploy'] Trang kết thúc phân tích."
     )
     mineru_deploy_lang_list: Optional[List[str]] = Field(
         None,
-        description="[仅当 convert_engine='mineru_deploy'] 语言列表, 默认 ['ch']。",
+        description="[Chỉ khi convert_engine='mineru_deploy'] Danh sách ngôn ngữ, mặc định ['ch'].",
         examples=[["ch", "en"]],
     )
     # 修改: 默认值改为 ""
     mineru_deploy_server_url: Optional[str] = Field(
         default=MINERU_DEPLOY_SERVER_URL or "",
-        description="[仅当 convert_engine='mineru_deploy' 且 backend为http-client相关时] Server URL.",
+        description="[Chỉ khi convert_engine='mineru_deploy' và backend liên quan đến http-client] Server URL.",
     )
 
     @model_validator(mode="after")
@@ -486,7 +486,7 @@ class MarkdownWorkflowParams(BaseWorkflowParams):
                 self.mineru_token = MINERU_TOKEN
             if not self.mineru_token:
                 raise ValueError(
-                    "当 `convert_engine` 为 'mineru' 时，`mineru_token` 字段是必须的。"
+                    "Khi `convert_engine` là 'mineru', trường `mineru_token` là bắt buộc."
                 )
         if self.convert_engine == "mineru_deploy":
             if ENV_FORCE_OVERRIDE and ENV_SET.get("mineru_deploy_api_key"):
@@ -504,130 +504,130 @@ class MarkdownWorkflowParams(BaseWorkflowParams):
                 self.mineru_deploy_base_url = MINERU_DEPLOY_BASE_URL
             if not self.mineru_deploy_base_url:
                 raise ValueError(
-                    "当 `convert_engine` 为 'mineru_deploy' 时，`mineru_deploy_base_url` 字段是必须的。"
+                    "Khi `convert_engine` là 'mineru_deploy', trường `mineru_deploy_base_url` là bắt buộc."
                 )
             if (
                 self.mineru_deploy_backend.endswith("-http-client")
                 and not self.mineru_deploy_server_url
             ):
                 raise ValueError(
-                    "MinerU Deploy 使用 http-client backend 时，`mineru_deploy_server_url` 字段是必须的。"
+                    "Khi MinerU Deploy dùng http-client backend, trường `mineru_deploy_server_url` là bắt buộc."
                 )
         return self
 
 
 class TextWorkflowParams(BaseWorkflowParams):
     workflow_type: Literal["txt"] = Field(
-        ..., description="指定使用纯文本的翻译工作流。"
+        ..., description="Chỉ định dùng quy trình dịch văn bản thuần."
     )
     insert_mode: Literal["replace", "append", "prepend"] = Field(
         INSERT_MODE,
-        description="翻译文本的插入模式。'replace'：替换原文，'append'：附加到原文后，'prepend'：附加到原文前。",
+        description="Chế độ chèn văn bản dịch. 'replace': thay thế bản gốc, 'append': thêm vào sau bản gốc, 'prepend': thêm vào trước bản gốc.",
     )
     separator: str = Field(
         SEPARATOR,
-        description="当 insert_mode 为 'append' 或 'prepend' 时，用于分隔原文和译文的分隔符。",
+        description="Ký tự phân tách giữa bản gốc và bản dịch khi insert_mode là 'append' hoặc 'prepend'.",
     )
     segment_mode: Literal["line", "paragraph", "none"] = Field(
         default=SEGMENT_MODE,
-        description="分段模式: 'line'(按行), 'paragraph'(按段), 'none'(全文)",
+        description="Chế độ chia đoạn: 'line' (theo dòng), 'paragraph' (theo đoạn), 'none' (toàn văn)",
     )
 
 
 class JsonWorkflowParams(BaseWorkflowParams):
     workflow_type: Literal["json"] = Field(
-        ..., description="指定使用JSON的翻译工作流。"
+        ..., description="Chỉ định dùng quy trình dịch JSON."
     )
     json_paths: List[str] = Field(
         default_factory=lambda: ["$..*"],
-        description="一个jsonpath-ng表达式列表，用于指定需要翻译的JSON字段。",
+        description="Danh sách biểu thức jsonpath-ng dùng để chỉ định các trường JSON cần dịch.",
         examples=[["$.product.name", "$.product.description", "$.features[*]"]],
     )
 
 
 class XlsxWorkflowParams(BaseWorkflowParams):
     workflow_type: Literal["xlsx"] = Field(
-        ..., description="指定使用XLSX的翻译工作流。"
+        ..., description="Chỉ định dùng quy trình dịch XLSX."
     )
     insert_mode: Literal["replace", "append", "prepend"] = Field(
         "replace",
-        description="翻译文本的插入模式。'replace'：替换原文，'append'：附加到原文后，'prepend'：附加到原文前。",
+        description="Chế độ chèn văn bản dịch. 'replace': thay thế bản gốc, 'append': thêm vào sau bản gốc, 'prepend': thêm vào trước bản gốc.",
     )
     separator: str = Field(
         "\n",
-        description="当 insert_mode 为 'append' 或 'prepend' 时，用于分隔原文和译文的分隔符。",
+        description="Ký tự phân tách giữa bản gốc và bản dịch khi insert_mode là 'append' hoặc 'prepend'.",
     )
     translate_regions: Optional[List[str]] = Field(
         None,
-        description="指定翻译区域列表。示例: ['Sheet1!A1:B10', 'C:D', 'E5']。如果不指定表名 (如 'C:D')，则应用于所有表。如果为 None，则翻译整个文件中的所有文本。",
+        description="Danh sách vùng cần dịch. Ví dụ: ['Sheet1!A1:B10', 'C:D', 'E5']. Nếu không chỉ định tên bảng (như 'C:D') thì áp dụng cho tất cả các bảng. Nếu là None, dịch toàn bộ văn bản trong tệp.",
         examples=[None],
     )
     office_password: Optional[str] = Field(
         default=None,
-        description="用于解密加密文件的密码。如果文件未加密，此参数将被忽略。",
+        description="Mật khẩu để giải mã tệp bị mã hóa. Nếu tệp không được mã hóa, tham số này sẽ bị bỏ qua.",
         examples=[None, "mypassword123"],
     )
 
 
 class DocxWorkflowParams(BaseWorkflowParams):
     workflow_type: Literal["docx"] = Field(
-        ..., description="指定使用DOCX的翻译工作流。"
+        ..., description="Chỉ định dùng quy trình dịch DOCX."
     )
     insert_mode: Literal["replace", "append", "prepend"] = Field(
         "replace",
-        description="翻译文本的插入模式。'replace'：替换原文，'append'：附加到原文后，'prepend'：附加到原文前。",
+        description="Chế độ chèn văn bản dịch. 'replace': thay thế bản gốc, 'append': thêm vào sau bản gốc, 'prepend': thêm vào trước bản gốc.",
     )
     separator: str = Field(
         "\n",
-        description="当 insert_mode 为 'append' 或 'prepend' 时，用于分隔原文和译文的分隔符。",
+        description="Ký tự phân tách giữa bản gốc và bản dịch khi insert_mode là 'append' hoặc 'prepend'.",
     )
     office_password: Optional[str] = Field(
         default=None,
-        description="用于解密加密文件的密码。如果文件未加密，此参数将被忽略。",
+        description="Mật khẩu để giải mã tệp bị mã hóa. Nếu tệp không được mã hóa, tham số này sẽ bị bỏ qua.",
         examples=[None, "mypassword123"],
     )
 
 
 class SrtWorkflowParams(BaseWorkflowParams):
     workflow_type: Literal["srt"] = Field(
-        ..., description="指定使用SRT字幕的翻译工作流。"
+        ..., description="Chỉ định dùng quy trình dịch phụ đề SRT."
     )
     insert_mode: Literal["replace", "append", "prepend"] = Field(
         "replace",
-        description="翻译文本的插入模式。'replace'：替换原文，'append'：附加到原文后，'prepend'：附加到原文前。",
+        description="Chế độ chèn văn bản dịch. 'replace': thay thế bản gốc, 'append': thêm vào sau bản gốc, 'prepend': thêm vào trước bản gốc.",
     )
     separator: str = Field(
         "\n",
-        description="当 insert_mode 为 'append' 或 'prepend' 时，用于分隔原文和译文的分隔符。",
+        description="Ký tự phân tách giữa bản gốc và bản dịch khi insert_mode là 'append' hoặc 'prepend'.",
     )
 
 
 class EpubWorkflowParams(BaseWorkflowParams):
     workflow_type: Literal["epub"] = Field(
-        ..., description="指定使用EPUB的翻译工作流。"
+        ..., description="Chỉ định dùng quy trình dịch EPUB."
     )
     insert_mode: Literal["replace", "append", "prepend"] = Field(
         "replace",
-        description="翻译文本的插入模式。'replace'：替换原文，'append'：附加到原文后，'prepend'：附加到原文前。",
+        description="Chế độ chèn văn bản dịch. 'replace': thay thế bản gốc, 'append': thêm vào sau bản gốc, 'prepend': thêm vào trước bản gốc.",
     )
     separator: str = Field(
         "\n",
-        description="当 insert_mode 为 'append' 或 'prepend' 时，用于分隔原文和译文的分隔符。",
+        description="Ký tự phân tách giữa bản gốc và bản dịch khi insert_mode là 'append' hoặc 'prepend'.",
     )
 
 
 # --- HTML WORKFLOW PARAMS START ---
 class HtmlWorkflowParams(BaseWorkflowParams):
     workflow_type: Literal["html"] = Field(
-        ..., description="指定使用HTML的翻译工作流。"
+        ..., description="Chỉ định dùng quy trình dịch HTML."
     )
     insert_mode: Literal["replace", "append", "prepend"] = Field(
         "replace",
-        description="翻译文本的插入模式。'replace'：替换原文，'append' :附加到原文后，'prepend'：附加到原文前。",
+        description="Chế độ chèn văn bản dịch. 'replace': thay thế bản gốc, 'append': thêm vào sau bản gốc, 'prepend': thêm vào trước bản gốc.",
     )
     separator: str = Field(
         " ",
-        description="当 insert_mode 为 'append' 或 'prepend' 时，用于分隔原文和译文的分隔符。",
+        description="Ký tự phân tách giữa bản gốc và bản dịch khi insert_mode là 'append' hoặc 'prepend'.",
     )
 
 
@@ -637,15 +637,15 @@ class HtmlWorkflowParams(BaseWorkflowParams):
 # --- ASS WORKFLOW PARAMS START ---
 class AssWorkflowParams(BaseWorkflowParams):
     workflow_type: Literal["ass"] = Field(
-        ..., description="指定使用ASS字幕的翻译工作流。"
+        ..., description="Chỉ định dùng quy trình dịch phụ đề ASS."
     )
     insert_mode: Literal["replace", "append", "prepend"] = Field(
         "replace",
-        description="翻译文本的插入模式。'replace'：替换原文，'append'：附加到原文后，'prepend'：附加到原文前。",
+        description="Chế độ chèn văn bản dịch. 'replace': thay thế bản gốc, 'append': thêm vào sau bản gốc, 'prepend': thêm vào trước bản gốc.",
     )
     separator: str = Field(
         "\\N",
-        description="当 insert_mode 为 'append' 或 'prepend' 时，用于分隔原文和译文的分隔符。ASS格式通常使用 \\N 作为换行符。",
+        description="Ký tự phân tách giữa bản gốc và bản dịch khi insert_mode là 'append' hoặc 'prepend'. Định dạng ASS thường dùng \\N làm ký tự xuống dòng.",
     )
 
 
@@ -655,15 +655,15 @@ class AssWorkflowParams(BaseWorkflowParams):
 # --- PPTX WORKFLOW PARAMS START ---
 class PPTXWorkflowParams(BaseWorkflowParams):
     workflow_type: Literal["pptx"] = Field(
-        ..., description="指定使用PPTX的翻译工作流。"
+        ..., description="Chỉ định dùng quy trình dịch PPTX."
     )
     insert_mode: Literal["replace", "append", "prepend"] = Field(
         "replace",
-        description="翻译文本的插入模式。'replace'：替换原文，'append'：附加到原文后，'prepend'：附加到原文前。",
+        description="Chế độ chèn văn bản dịch. 'replace': thay thế bản gốc, 'append': thêm vào sau bản gốc, 'prepend': thêm vào trước bản gốc.",
     )
     separator: str = Field(
         "\n",
-        description="当 insert_mode 为 'append' 或 'prepend' 时，用于分隔原文和译文的分隔符。",
+        description="Ký tự phân tách giữa bản gốc và bản dịch khi insert_mode là 'append' hoặc 'prepend'.",
     )
     # target_cjk_font removed as per request
 

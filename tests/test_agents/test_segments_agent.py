@@ -50,7 +50,7 @@ def test_numeric_ids_still_detect_untranslated_response(agent):
     prompt = generate_prompt(json.dumps({"0": "zero", "1": "one"}), "zh")
     response = [{"id": "1", "t": "one"}, {"id": 0, "t": "zero"}]
 
-    with pytest.raises(AgentResultError, match="翻译结果与原文完全相同"):
+    with pytest.raises(AgentResultError, match="Kết quả dịch hoàn toàn giống văn bản gốc"):
         agent._result_handler(json.dumps(response), prompt, agent.logger)
 
 

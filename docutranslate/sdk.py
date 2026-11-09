@@ -74,13 +74,13 @@ class TranslationResult:
         :return: 保存文件的完整路径 (仅供参考)。
         """
         if not self._mapping:
-            raise ValueError(f"工作流 {self._workflow_type} 不支持自动保存")
+            raise ValueError(f"Quy trình {self._workflow_type} không hỗ trợ tự động lưu")
 
         # 确定使用的格式
         if fmt:
             if fmt not in self._mapping:
                 raise ValueError(
-                    f"格式 '{fmt}' 不支持。可用格式: {self._supported_formats}"
+                    f"Định dạng '{fmt}' không được hỗ trợ. Các định dạng khả dụng: {self._supported_formats}"
                 )
             method_name, default_suffix = self._mapping[fmt]
         else:
@@ -99,7 +99,7 @@ class TranslationResult:
         if method:
             method(name=name, output_dir=output_dir)
             return str(Path(output_dir) / name)
-        raise AttributeError(f"Workflow 缺少方法 {method_name}")
+        raise AttributeError(f"Workflow thiếu phương thức {method_name}")
 
     def export(self, fmt: Optional[str] = None) -> str:
         """
@@ -109,13 +109,13 @@ class TranslationResult:
         :return: Base64 编码的结果。
         """
         if not self._mapping:
-            raise ValueError(f"工作流 {self._workflow_type} 不支持导出")
+            raise ValueError(f"Quy trình {self._workflow_type} không hỗ trợ xuất")
 
         # 确定使用的格式
         if fmt:
             if fmt not in self._mapping:
                 raise ValueError(
-                    f"格式 '{fmt}' 不支持。可用格式: {self._supported_formats}"
+                    f"Định dạng '{fmt}' không được hỗ trợ. Các định dạng khả dụng: {self._supported_formats}"
                 )
             export_key = fmt
         else:
@@ -135,7 +135,7 @@ class TranslationResult:
             if isinstance(content, str):
                 content = content.encode('utf-8')
             return base64.b64encode(content).decode('utf-8')
-        raise AttributeError(f"Workflow 缺少方法 {method_name}")
+        raise AttributeError(f"Workflow thiếu phương thức {method_name}")
 
     @property
     def statistics(self) -> Dict[str, Any]:
@@ -398,12 +398,12 @@ class Client:
         # 3. 文件校验
         path_obj = Path(file_path)
         if not path_obj.exists():
-            raise FileNotFoundError(f"文件不存在: {file_path}")
+            raise FileNotFoundError(f"Tệp không tồn tại: {file_path}")
 
         try:
             payload = resolve_payload(final_params, path_obj.name)
         except ValueError as e:
-            raise ValueError(f"参数配置校验失败: {e}") from e
+            raise ValueError(f"Xác thực cấu hình tham số thất bại: {e}") from e
         final_params["workflow_type"] = payload.workflow_type
 
         # 7. 创建 Workflow

@@ -79,7 +79,7 @@ class MarkdownBasedWorkflow(Workflow[MarkdownBasedWorkflowConfig, Document, Mark
                     f"The correct convert_config was not passed. It should be of type {config_class.__name__}, but it is currently of type {type(convert_config).__name__}.")
             converter = converter_class(convert_config)
         else:
-            raise ValueError(f"不存在{convert_engin}解析引擎")
+            raise ValueError(f"Không tồn tại công cụ phân tích {convert_engin}")
         document_md: Document = converter.convert(self.document_original)
         if hasattr(converter, "attachments"):
             for attachment in converter.attachments:
@@ -91,7 +91,7 @@ class MarkdownBasedWorkflow(Workflow[MarkdownBasedWorkflowConfig, Document, Mark
 
     def _get_md_from_zip(self, document: Document) -> Document:
         assert document.suffix.lower() == ".zip"
-        self.logger.info("传入zip文件，正在自动组合markdown文本与图片")
+        self.logger.info("Đã nhận tệp zip, đang tự động ghép văn bản markdown với hình ảnh")
         content_byte = embed_inline_image_from_zip(document.content).encode()
         return document.from_bytes(content_byte, suffix=".md", stem=document.stem)
 
@@ -105,7 +105,7 @@ class MarkdownBasedWorkflow(Workflow[MarkdownBasedWorkflowConfig, Document, Mark
 
     def translate(self) -> Self:
         # 解析文档阶段
-        self.progress_tracker.update(percent=10, message="正在解析文档...")
+        self.progress_tracker.update(percent=10, message="Đang phân tích tài liệu...")
         convert_engine, convert_config, translator_config, translator = self._pre_translate(self.document_original)
         self._translator = translator  # 保存translator引用
         document_md = self._get_document_md(convert_engine, convert_config)
@@ -115,16 +115,16 @@ class MarkdownBasedWorkflow(Workflow[MarkdownBasedWorkflowConfig, Document, Mark
 
         # 保存术语表阶段
         if translator.glossary.glossary_dict:
-            self.progress_tracker.update(percent=95, message="正在保存术语表...")
+            self.progress_tracker.update(percent=95, message="Đang lưu bảng thuật ngữ...")
             self.attachment.add_document("glossary", Glossary.glossary_dict2csv(translator.glossary.glossary_dict))
 
-        self.progress_tracker.update(percent=100, message="翻译完成")
+        self.progress_tracker.update(percent=100, message="Dịch hoàn tất")
         self.document_translated = document_md
         return self
 
     async def translate_async(self) -> Self:
         # 解析文档阶段
-        self.progress_tracker.update(percent=10, message="正在解析文档...")
+        self.progress_tracker.update(percent=10, message="Đang phân tích tài liệu...")
         convert_engine, convert_config, translator_config, translator = self._pre_translate(self.document_original)
         self._translator = translator  # 保存translator引用
         document_md = await asyncio.to_thread(self._get_document_md, convert_engine, convert_config)
@@ -134,10 +134,10 @@ class MarkdownBasedWorkflow(Workflow[MarkdownBasedWorkflowConfig, Document, Mark
 
         # 保存术语表阶段
         if translator.glossary.glossary_dict:
-            self.progress_tracker.update(percent=95, message="正在保存术语表...")
+            self.progress_tracker.update(percent=95, message="Đang lưu bảng thuật ngữ...")
             self.attachment.add_document("glossary", Glossary.glossary_dict2csv(translator.glossary.glossary_dict))
 
-        self.progress_tracker.update(percent=100, message="翻译完成")
+        self.progress_tracker.update(percent=100, message="Dịch hoàn tất")
         self.document_translated = document_md
         return self
 

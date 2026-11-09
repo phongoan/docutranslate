@@ -161,7 +161,7 @@ class ConverterMineruDeploy(X2MarkdownConverter):
         canonical_backend = self._canonical_backend(config.backend)
         if canonical_backend.endswith("-http-client") and not config.server_url:
             raise ValueError(
-                f"MinerU backend={canonical_backend} 时必须配置 server_url"
+                f"MinerU backend={canonical_backend} phải cấu hình server_url"
             )
 
     @staticmethod
@@ -240,7 +240,7 @@ class ConverterMineruDeploy(X2MarkdownConverter):
             return
         detail = self._response_detail(response)
         raise RuntimeError(
-            f"MinerU Deploy {context}失败: HTTP {response.status_code}: {detail}"
+            f"MinerU Deploy {context} thất bại: HTTP {response.status_code}: {detail}"
         )
 
     def _resolve_task_url(self, value: object, fallback: str) -> str:
@@ -255,10 +255,10 @@ class ConverterMineruDeploy(X2MarkdownConverter):
 
     def _task_urls(self, payload: object) -> tuple[str, str, str]:
         if not isinstance(payload, dict):
-            raise RuntimeError("MinerU Deploy 返回了无效的任务提交结果")
+            raise RuntimeError("MinerU Deploy trả về kết quả gửi tác vụ không hợp lệ")
         task_id = payload.get("task_id")
         if not isinstance(task_id, str) or not task_id:
-            raise RuntimeError("MinerU Deploy 任务提交结果缺少 task_id")
+            raise RuntimeError("Kết quả gửi tác vụ của MinerU Deploy thiếu task_id")
         status_url = self._resolve_task_url(
             payload.get("status_url"), f"{self._tasks_url}/{task_id}"
         )
@@ -268,11 +268,11 @@ class ConverterMineruDeploy(X2MarkdownConverter):
         return task_id, status_url, result_url
 
     def _result_bytes(self, response: httpx.Response) -> bytes:
-        self._raise_for_status(response, "获取结果")
+        self._raise_for_status(response, "Lấy kết quả")
         content_type = response.headers.get("content-type", "").lower()
         if "json" in content_type:
             raise RuntimeError(
-                f"MinerU Deploy 未返回 ZIP: {self._response_detail(response)}"
+                f"MinerU Deploy không trả về ZIP: {self._response_detail(response)}"
             )
         return response.content
 
@@ -286,10 +286,10 @@ class ConverterMineruDeploy(X2MarkdownConverter):
         )
         if response.status_code in {404, 405}:
             return None
-        self._raise_for_status(response, "提交任务")
+        self._raise_for_status(response, "Gửi tác vụ")
         if response.status_code != 202:
             raise RuntimeError(
-                f"MinerU Deploy 任务提交返回了意外状态码 {response.status_code}"
+                f"Gửi tác vụ MinerU Deploy trả về mã trạng thái không mong đợi {response.status_code}"
             )
         return self._task_urls(response.json())
 
@@ -303,10 +303,10 @@ class ConverterMineruDeploy(X2MarkdownConverter):
         )
         if response.status_code in {404, 405}:
             return None
-        self._raise_for_status(response, "提交任务")
+        self._raise_for_status(response, "Gửi tác vụ")
         if response.status_code != 202:
             raise RuntimeError(
-                f"MinerU Deploy 任务提交返回了意外状态码 {response.status_code}"
+                f"Gửi tác vụ MinerU Deploy trả về mã trạng thái không mong đợi {response.status_code}"
             )
         return self._task_urls(response.json())
 
@@ -315,7 +315,7 @@ class ConverterMineruDeploy(X2MarkdownConverter):
         deadline = time.monotonic() + self.task_timeout
         while time.monotonic() < deadline:
             response = client.get(status_url, **self._auth_kwargs(status_url))
-            self._raise_for_status(response, "查询任务状态")
+            self._raise_for_status(response, "Truy vấn trạng thái tác vụ")
             payload = response.json()
             status = payload.get("status") if isinstance(payload, dict) else None
             if status in {"pending", "processing"}:
@@ -327,10 +327,10 @@ class ConverterMineruDeploy(X2MarkdownConverter):
                 )
             detail = self._response_detail(response)
             raise RuntimeError(
-                f"MinerU Deploy 任务 {task_id} 失败，状态={status}: {detail}"
+                f"Tác vụ MinerU Deploy {task_id} thất bại, trạng thái={status}: {detail}"
             )
         raise TimeoutError(
-            f"MinerU Deploy 任务 {task_id} 超过总等待时间 {self.task_timeout} 秒"
+            f"Tác vụ MinerU Deploy {task_id} vượt quá tổng thời gian chờ {self.task_timeout} giây"
         )
 
     async def _wait_for_task_async(self, task: tuple[str, str, str]) -> bytes:
@@ -339,7 +339,7 @@ class ConverterMineruDeploy(X2MarkdownConverter):
         deadline = loop.time() + self.task_timeout
         while loop.time() < deadline:
             response = await client_async.get(status_url, **self._auth_kwargs(status_url))
-            self._raise_for_status(response, "查询任务状态")
+            self._raise_for_status(response, "Truy vấn trạng thái tác vụ")
             payload = response.json()
             status = payload.get("status") if isinstance(payload, dict) else None
             if status in {"pending", "processing"}:
@@ -352,10 +352,10 @@ class ConverterMineruDeploy(X2MarkdownConverter):
                 return self._result_bytes(result_response)
             detail = self._response_detail(response)
             raise RuntimeError(
-                f"MinerU Deploy 任务 {task_id} 失败，状态={status}: {detail}"
+                f"Tác vụ MinerU Deploy {task_id} thất bại, trạng thái={status}: {detail}"
             )
         raise TimeoutError(
-            f"MinerU Deploy 任务 {task_id} 超过总等待时间 {self.task_timeout} 秒"
+            f"Tác vụ MinerU Deploy {task_id} vượt quá tổng thời gian chờ {self.task_timeout} giây"
         )
 
     def _v1_adapter(self):
@@ -366,7 +366,7 @@ class ConverterMineruDeploy(X2MarkdownConverter):
         result = self._v1_adapter().run(client, d)
         if result is not None:
             return result
-        self.logger.warning("MinerU 服务不支持 /tasks，回退到兼容接口 /file_parse")
+        self.logger.warning("Dịch vụ MinerU không hỗ trợ /tasks, chuyển về giao diện tương thích /file_parse")
         response = client.post(
             self._legacy_api_url,
             files=self._files(d),
@@ -380,7 +380,7 @@ class ConverterMineruDeploy(X2MarkdownConverter):
         result = await self._v1_adapter().run_async(client_async, d)
         if result is not None:
             return result
-        self.logger.warning("MinerU 服务不支持 /tasks，回退到兼容接口 /file_parse")
+        self.logger.warning("Dịch vụ MinerU không hỗ trợ /tasks, chuyển về giao diện tương thích /file_parse")
         response = await client_async.post(
             self._legacy_api_url,
             files=self._files(d),
@@ -401,20 +401,20 @@ class ConverterMineruDeploy(X2MarkdownConverter):
                 ),
             )
         )
-        self.logger.info("已转化为markdown")
+        self.logger.info("Đã chuyển thành markdown")
         return MarkdownDocument.from_bytes(md.encode(), suffix=".md", stem=d.stem)
 
     def convert(self, d: Document) -> MarkdownDocument:
-        self.logger.info("开始解析文件")
+        self.logger.info("Bắt đầu phân tích tệp")
         task = self._submit_task(d)
         content = self._legacy_request(d) if task is None else self._wait_for_task(task)
         md = embed_inline_image_from_zip(content, None)
         if md is None:
-            raise Exception("无法从 MinerU Deploy 返回的 ZIP 中提取 Markdown 文件")
+            raise Exception("Không thể trích xuất tệp Markdown từ ZIP do MinerU Deploy trả về")
         return self._build_result(d, content, md)
 
     async def convert_async(self, d: Document) -> MarkdownDocument:
-        self.logger.info("开始解析文件")
+        self.logger.info("Bắt đầu phân tích tệp")
         task = await self._submit_task_async(d)
         content = (
             await self._legacy_request_async(d)
@@ -423,7 +423,7 @@ class ConverterMineruDeploy(X2MarkdownConverter):
         )
         md = await asyncio.to_thread(embed_inline_image_from_zip, content, None)
         if md is None:
-            raise Exception("无法从 MinerU Deploy 返回的 ZIP 中提取 Markdown 文件")
+            raise Exception("Không thể trích xuất tệp Markdown từ ZIP do MinerU Deploy trả về")
         return self._build_result(d, content, md)
 
     def support_format(self) -> list[str]:

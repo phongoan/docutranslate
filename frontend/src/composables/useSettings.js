@@ -94,7 +94,7 @@ export function useSettings() {
         provider: 'api.openai.com',
         system_proxy_enable: false,
         force_json: false,
-        to_lang: 'Simplified Chinese',
+        to_lang: 'Vietnamese',
         custom_to_lang: '',
         thinking: 'disable',
         custom_prompt: '',
@@ -114,7 +114,7 @@ export function useSettings() {
         glossary_agent_key: '',
         glossary_agent_model_id: '',
         glossary_agent_provider: 'api.openai.com',
-        glossary_agent_to_lang: 'Simplified Chinese',
+        glossary_agent_to_lang: 'Vietnamese',
         glossary_agent_custom_to_lang: '',
         glossary_agent_chunk_size: 4000,
         glossary_agent_concurrent: 30,
@@ -202,7 +202,7 @@ export function useSettings() {
             const parsedLangList = savedLangList ? JSON.parse(savedLangList) : [];
             form.mineru_deploy_lang_list = Array.isArray(parsedLangList) ? parsedLangList : [];
         } catch (e) {
-            console.warn('mineru_deploy_lang_list 不是合法 JSON，已重置', e);
+            console.warn('mineru_deploy_lang_list không phải JSON hợp lệ, đã đặt lại', e);
             localStorage.removeItem('mineru_deploy_lang_list');
             form.mineru_deploy_lang_list = [];
         }
@@ -211,7 +211,7 @@ export function useSettings() {
         form.platform = storage.get(STORAGE.keys.PLATFORM, 'custom');
         form.system_proxy_enable = storage.getBool('translator_system_proxy_enable', defaults.system_proxy_enable ?? false);
         form.force_json = storage.getBool('translator_force_json', false);
-        form.to_lang = storage.get('translator_to_lang', 'Simplified Chinese');
+        form.to_lang = storage.get('translator_to_lang', 'Vietnamese');
         form.custom_to_lang = storage.get('translator_custom_to_lang', '');
         form.thinking = storage.get('translator_thinking_mode', defaults.thinking ?? 'disable');
         form.custom_prompt = storage.get(STORAGE.keys.CUSTOM_PROMPT, '');
@@ -238,7 +238,7 @@ export function useSettings() {
         form.glossary_agent_custom_prompt = storage.get('glossary_agent_custom_prompt', '');
         form.glossary_agent_config_choice = storage.get('glossary_agent_config_choice', 'same');
         form.glossary_agent_platform = storage.get('glossary_agent_platform_last_platform', 'custom');
-        form.glossary_agent_to_lang = storage.get('glossary_agent_to_lang', 'Simplified Chinese');
+        form.glossary_agent_to_lang = storage.get('glossary_agent_to_lang', 'Vietnamese');
         form.glossary_agent_custom_to_lang = storage.get('glossary_agent_custom_to_lang', '');
         form.glossary_agent_chunk_size = storage.getNum('glossary_agent_chunk_size', defaults.chunk_size ?? 1000);
         form.glossary_agent_concurrent = storage.getNum('glossary_agent_concurrent', defaults.concurrent ?? 5);

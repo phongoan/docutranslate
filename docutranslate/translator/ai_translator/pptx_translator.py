@@ -99,7 +99,7 @@ class PPTXTranslator(AiTranslator):
                     percent = 30 + int((current / total) * 60)
                     self.progress_tracker.update(
                         percent=percent,
-                        message=f"正在翻译 ({current}/{total})"
+                        message=f"Đang dịch ({current}/{total})"
                     )
 
             agent_config = SegmentsTranslateAgentConfig(

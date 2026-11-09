@@ -166,7 +166,7 @@ class EpubTranslator(AiTranslator):
                     percent = 30 + int((current / total) * 60)
                     self.progress_tracker.update(
                         percent=percent,
-                        message=f"正在翻译 ({current}/{total})"
+                        message=f"Đang dịch ({current}/{total})"
                     )
 
             agent_config = SegmentsTranslateAgentConfig(
@@ -221,7 +221,7 @@ class EpubTranslator(AiTranslator):
         # 解析 container.xml 寻找 OPF
         container_xml = all_files.get('META-INF/container.xml')
         if not container_xml:
-            raise ValueError("无效的 EPUB：找不到 META-INF/container.xml")
+            raise ValueError("EPUB không hợp lệ: không tìm thấy META-INF/container.xml")
         root = ET.fromstring(container_xml)
         ns = {'cn': 'urn:oasis:names:tc:opendocument:xmlns:container'}
         opf_path = root.find('cn:rootfiles/cn:rootfile', ns).get('full-path')
@@ -230,7 +230,7 @@ class EpubTranslator(AiTranslator):
         # 解析 OPF 获取文件清单
         opf_xml = all_files.get(opf_path)
         if not opf_xml:
-            raise ValueError(f"无效的 EPUB：找不到 {opf_path}")
+            raise ValueError(f"EPUB không hợp lệ: không tìm thấy {opf_path}")
         opf_root = ET.fromstring(opf_xml)
         ns_opf = {'opf': 'http://www.idpf.org/2007/opf'}
 
@@ -250,7 +250,7 @@ class EpubTranslator(AiTranslator):
                 file_path = item_data['href']
                 content_bytes = all_files.get(file_path)
                 if not content_bytes:
-                    self.logger.warning(f"在 EPUB 中找不到文件: {file_path}")
+                    self.logger.warning(f"Không tìm thấy tệp trong EPUB: {file_path}")
                     continue
 
                 if file_path not in soups:
@@ -426,7 +426,7 @@ class EpubTranslator(AiTranslator):
     def translate(self, document: Document) -> Self:
         all_files, soups, items_to_translate, original_texts = self._pre_translate(document)
         if not items_to_translate:
-            self.logger.info("\n文件中没有找到需要翻译的内容。")
+            self.logger.info("\nKhông tìm thấy nội dung cần dịch trong tệp.")
             document.content = self._after_translate(all_files, soups, [], [], [])
             return self
 
@@ -455,7 +455,7 @@ class EpubTranslator(AiTranslator):
             self._pre_translate, document
         )
         if not items_to_translate:
-            self.logger.info("\n文件中没有找到需要翻译的内容。")
+            self.logger.info("\nKhông tìm thấy nội dung cần dịch trong tệp.")
             document.content = await asyncio.to_thread(self._after_translate, all_files, soups, [], [], [])
             return self
 
