@@ -141,7 +141,7 @@
                         v-model="form.convert_engine"
                         @change="saveSetting('translator_convert_engin', form.convert_engine)">
                     <option value="identity" v-if="showIdentityOption">
-                        {{ t('engineOptionIdentity') || '已经是markdown' }}
+                        {{ t('engineOptionIdentity') || 'Đã là Markdown' }}
                     </option>
                     <option v-for="eng in enginList" :key="eng" :value="eng">
                         {{ t('engineOption' + capitalize(eng)) || eng }}
@@ -348,16 +348,16 @@
 
             <!-- Markdown to Docx Engine Selector -->
             <div class="border-t border-gray-200 dark:border-gray-700 mt-3 pt-3">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ t('md2docxEngineLabel') || 'Markdown转Docx引擎' }}</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ t('md2docxEngineLabel') || 'Engine chuyển Markdown sang Docx' }}</label>
                 <select class="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary"
                         v-model="form.md2docx_engine"
                         @change="saveSetting('translator_md2docx_engine', form.md2docx_engine)">
-                    <option :value="null">{{ t('engineOptionNone') || '不生成docx' }}</option>
-                    <option value="auto">{{ t('engineOptionAuto') || '自动选择' }}</option>
-                    <option value="python">{{ t('engineOptionPython') || '纯Python' }}</option>
+                    <option :value="null">{{ t('engineOptionNone') || 'Không tạo docx' }}</option>
+                    <option value="auto">{{ t('engineOptionAuto') || 'Tự động chọn' }}</option>
+                    <option value="python">{{ t('engineOptionPython') || 'Python thuần' }}</option>
                     <option value="pandoc">{{ t('engineOptionPandoc') || 'Pandoc' }}</option>
                 </select>
-                <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ t('md2docxEngineHelp') || '选择将Markdown导出为Docx的方式' }}</div>
+                <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ t('md2docxEngineHelp') || 'Chọn cách xuất Markdown sang Docx' }}</div>
             </div>
         </div>
     </Collapse>

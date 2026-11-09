@@ -44,7 +44,7 @@ class MDMaskUrisContext:
         except UnicodeDecodeError:
             if candidate:
                 global_logger.warning(
-                    "Markdown 内容无法用检测到的编码 %s 或 utf-8 完整解码，将替换非法字节", candidate
+                    "Nội dung Markdown không thể giải mã đầy đủ bằng bảng mã phát hiện được %s hoặc utf-8, sẽ thay thế các byte không hợp lệ", candidate
                 )
             return "utf-8"
 

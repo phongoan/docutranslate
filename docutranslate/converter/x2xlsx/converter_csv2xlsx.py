@@ -43,7 +43,7 @@ class ConverterCsv2Xlsx(X2XlsxConverter):
         """
         将 CSV Document 对象同步转换为 XLSX Document 对象。
         """
-        self.logger.info(f"开始转换文件 {document.name} (大小: {len(document.content)} bytes)")
+        self.logger.info(f"Bắt đầu chuyển đổi tệp {document.name} (kích thước: {len(document.content)} bytes)")
 
         try:
             # --- 1. 解码源文件 ---
@@ -59,7 +59,7 @@ class ConverterCsv2Xlsx(X2XlsxConverter):
                     encoding = declared_encoding
                 except (UnicodeDecodeError, LookupError) as exc:
                     self.logger.warning(
-                        "使用指定编码 %s 解码失败(%s)，改用自动检测。", declared_encoding, exc
+                        "Giải mã bằng bảng mã chỉ định %s thất bại (%s), chuyển sang tự động phát hiện.", declared_encoding, exc
                     )
             if decoded_content is None:
                 try:
@@ -77,10 +77,10 @@ class ConverterCsv2Xlsx(X2XlsxConverter):
                     except (UnicodeDecodeError, LookupError):
                         decoded_content = None
                 if decoded_content is None:
-                    self.logger.warning("无法确定 CSV 编码，将按 utf-8 替换非法字节。")
+                    self.logger.warning("Không thể xác định bảng mã CSV, sẽ thay các byte không hợp lệ theo utf-8.")
                     decoded_content = document.content.decode("utf-8", errors="replace")
                     encoding = "utf-8 (replace)"
-            self.logger.info(f"使用编码 {encoding} 读取 CSV")
+            self.logger.info(f"Đọc CSV bằng bảng mã {encoding}")
 
             csv_text_stream = StringIO(decoded_content)
 
@@ -89,9 +89,9 @@ class ConverterCsv2Xlsx(X2XlsxConverter):
                 # Sniffer需要一些数据来嗅探，如果文件太小可能失败
                 dialect = csv.Sniffer().sniff(csv_text_stream.read(2048))
                 csv_text_stream.seek(0)  # 将流指针重置回文件开头
-                self.logger.info(f"检测到CSV分隔符为: '{dialect.delimiter}'")
+                self.logger.info(f"Đã phát hiện dấu phân cách CSV: '{dialect.delimiter}'")
             except csv.Error:
-                self.logger.warning("无法自动识别CSV方言，将使用默认的逗号分隔符。")
+                self.logger.warning("Không thể tự nhận diện dạng CSV, sẽ dùng dấu phẩy mặc định.")
                 dialect = 'excel'  # 使用默认方言
                 csv_text_stream.seek(0)
 
@@ -107,14 +107,14 @@ class ConverterCsv2Xlsx(X2XlsxConverter):
                 ws.append(row_data)  # append() 是 write_only 模式下的高效写入方法
                 row_count += 1
 
-            self.logger.info(f"共处理 {row_count} 行数据。")
+            self.logger.info(f"Đã xử lý tổng cộng {row_count} dòng dữ liệu.")
 
             # --- 6. 将生成的XLSX保存到内存中的字节流 ---
             output_buffer = BytesIO()
             wb.save(output_buffer)
             output_buffer.seek(0)  # 将指针移到开头，以便getvalue()读取完整内容
 
-            self.logger.info(f"文件 {document.name} 已成功转换为 XLSX 格式。")
+            self.logger.info(f"Tệp {document.name} đã được chuyển sang định dạng XLSX thành công.")
 
             return Document.from_bytes(
                 content=output_buffer.getvalue(),
@@ -123,7 +123,7 @@ class ConverterCsv2Xlsx(X2XlsxConverter):
             )
 
         except Exception as e:
-            self.logger.error(f"转换文件 {document.name} 时发生严重错误: {e}", exc_info=True)
+            self.logger.error(f"Chuyển đổi tệp {document.name} gặp lỗi nghiêm trọng: {e}", exc_info=True)
             # 根据您的业务逻辑，这里可以抛出异常或返回一个表示失败的特定对象
             raise
 
@@ -133,7 +133,7 @@ class ConverterCsv2Xlsx(X2XlsxConverter):
         由于核心转换逻辑是CPU密集型和阻塞IO，使用 to_thread 是正确的选择，
         它可以防止阻塞asyncio事件循环。
         """
-        self.logger.info(f"为文件 {document.name} 的转换任务创建新线程。")
+        self.logger.info(f"Tạo luồng mới cho tác vụ chuyển đổi của tệp {document.name}.")
         # 我们已经优化了 `convert` 方法，所以 `to_thread` 的方式非常适合
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, self.convert, document)

@@ -112,7 +112,7 @@ def _is_env_set(key: str) -> bool:
 API_KEY = _get_env_str("DOCUTRANSLATE_API_KEY", "xx")
 BASE_URL = _get_env_str("DOCUTRANSLATE_BASE_URL", "")
 MODEL_ID = _get_env_str("DOCUTRANSLATE_MODEL_ID", "")
-TO_LANG = _get_env_str("DOCUTRANSLATE_TO_LANG", "中文")
+TO_LANG = _get_env_str("DOCUTRANSLATE_TO_LANG", "Tiếng Việt")
 SKIP_TRANSLATE = _get_env_bool("DOCUTRANSLATE_SKIP_TRANSLATE", False)
 CHUNK_SIZE = _get_env_int("DOCUTRANSLATE_CHUNK_SIZE", 4000)
 CONCURRENT = _get_env_int("DOCUTRANSLATE_CONCURRENT", 30)

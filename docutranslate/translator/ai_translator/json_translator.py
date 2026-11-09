@@ -35,7 +35,7 @@ class JsonTranslator(AiTranslator):
                     percent = 30 + int((current / total) * 60)
                     self.progress_tracker.update(
                         percent=percent,
-                        message=f"正在翻译 ({current}/{total})"
+                        message=f"Đang dịch ({current}/{total})"
                     )
 
             agent_config = SegmentsTranslateAgentConfig(
@@ -145,13 +145,13 @@ class JsonTranslator(AiTranslator):
         """
         result = charset_normalizer.from_bytes(document.content).best()
         if result is None:
-            self.logger.error("无法检测JSON文件编码")
+            self.logger.error("Không thể phát hiện bảng mã của tệp JSON")
             return ""
         detected_encoding = result.encoding
         try:
             return document.content.decode(detected_encoding)
         except (UnicodeDecodeError, AttributeError) as e:
-            self.logger.error(f"无法使用检测到的编码 {detected_encoding} 解码文件: {e}")
+            self.logger.error(f"Không thể dùng bảng mã đã phát hiện {detected_encoding} để giải mã tệp: {e}")
             return ""
 
     def translate(self, document: Document) -> Self:
@@ -195,7 +195,7 @@ class JsonTranslator(AiTranslator):
             translated_texts = original_texts
 
         if len(original_texts) != len(translated_texts):
-            raise ValueError("翻译服务返回的项目数量与发送的数量不匹配。")
+            raise ValueError("Số mục dịch vụ dịch trả về không khớp với số mục đã gửi.")
 
         # 步骤 3: 将翻译结果写回原始JSON对象
         self._apply_translations(update_targets, translated_texts)
@@ -234,7 +234,7 @@ class JsonTranslator(AiTranslator):
             translated_texts = original_texts
 
         if len(original_texts) != len(translated_texts):
-            raise ValueError("翻译服务返回的项目数量与发送的数量不匹配。")
+            raise ValueError("Số mục dịch vụ dịch trả về không khớp với số mục đã gửi.")
 
         # 步骤 3: 将翻译结果写回原始JSON对象
         self._apply_translations(update_targets, translated_texts)

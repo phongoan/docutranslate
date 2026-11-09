@@ -16,10 +16,10 @@ from docutranslate.translator.base import Translator, TranslatorConfig
 class AiTranslatorConfig(TranslatorConfig, AgentConfig):
     base_url: str | None = field(
         default=None,
-        metadata={"description": "OpenAI兼容地址，当skip_translate为False时为必填项"},
+        metadata={"description": "Địa chỉ tương thích OpenAI, bắt buộc khi skip_translate là False"},
     )
     model_id: str | None = field(
-        default=None, metadata={"description": "当skip_translate为False时为必填项"}
+        default=None, metadata={"description": "Bắt buộc khi skip_translate là False"}
     )
     to_lang: str = TO_LANG
     custom_prompt: str | None = None
@@ -55,7 +55,7 @@ class AiTranslator(Translator[T]):
         if not self.skip_translate and (
                 config.base_url is None or config.api_key is None or config.model_id is None
         ):
-            raise ValueError("skip_translate不为false时，base_url、api_key、model_id为必填项")
+            raise ValueError("Khi skip_translate không phải false, base_url, api_key và model_id là bắt buộc")
 
         if not self.skip_translate and config.glossary_generate_enable:
             # 创建术语表进度回调 (20% - 30%)
@@ -65,7 +65,7 @@ class AiTranslator(Translator[T]):
                     percent = 20 + int((current / total) * 10)
                     self.progress_tracker.update(
                         percent=percent,
-                        message=f"正在提取术语表 ({current}/{total})"
+                        message=f"Đang trích xuất bảng thuật ngữ ({current}/{total})"
                     )
 
             if config.glossary_agent_config:

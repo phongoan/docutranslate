@@ -50,7 +50,7 @@ class _RequestLogTrace:
     rate_limit_wait: float = 0.0
     attempts: int = 0
     transport: str = "pending"
-    phase: str = "等待并发槽"
+    phase: str = "Chờ slot đồng thời"
     response_header_seconds: float | None = None
     first_data_seconds: float | None = None
     response_chunks: int = 0
@@ -58,7 +58,7 @@ class _RequestLogTrace:
 
     @property
     def label(self) -> str:
-        return f"[分片 {self.index}/{self.total}]"
+        return f"[Phân đoạn {self.index}/{self.total}]"
 
 
 _REQUEST_LOG_TRACE: ContextVar[_RequestLogTrace | None] = ContextVar(
@@ -75,7 +75,7 @@ def _text_fingerprint(text: str) -> str:
 def _safe_error_text(value: Any, limit: int = MAX_ERROR_BODY_LOG_LENGTH) -> str:
     text = mask_secrets(str(value)).replace("\r", " ").replace("\n", " ")
     if len(text) > limit:
-        return f"{text[:limit]}…(已截断，原长度 {len(text)})"
+        return f"{text[:limit]}…(đã cắt bớt, độ dài gốc {len(text)})"
     return text
 
 
@@ -195,7 +195,7 @@ class _StreamingResponseAccumulator:
         if not isinstance(data, dict):
             return
         if data.get("error"):
-            raise ValueError(f"流式响应返回错误: {data['error']}")
+            raise ValueError(f"Phản hồi streaming trả về lỗi: {data['error']}")
 
         self._saw_payload = True
         for usage_key in ("usage", "usageMetadata", "usage_metadata"):
@@ -310,7 +310,7 @@ class TotalErrorCounter:
         with self.lock:
             self.count += 1
             if self.count > self.max_errors_count:
-                self.logger.info(f"错误响应过多")
+                self.logger.info(f"Quá nhiều phản hồi lỗi")
             return self.reach_limit()
 
     def reach_limit(self):
@@ -562,9 +562,9 @@ class Agent:
 
     def _request_label(self, retry_count: int | None = None) -> str:
         trace = _REQUEST_LOG_TRACE.get()
-        label = trace.label if trace is not None else "[单请求]"
+        label = trace.label if trace is not None else "[Yêu cầu đơn]"
         if retry_count is not None:
-            return f"{label}[尝试 {retry_count + 1}/{self.retry + 1}]"
+            return f"{label}[Lần thử {retry_count + 1}/{self.retry + 1}]"
         return label
 
     def _log_attempt_failure(
@@ -584,9 +584,9 @@ class Agent:
             elapsed = now - trace.queued_at
             idle = now - trace.last_activity_at
             self.logger.info(
-                f"{trace.label} 仍在处理: 阶段={trace.phase}, "
-                f"累计={elapsed:.1f}s, 最近活动={idle:.1f}s前, "
-                f"尝试={max(trace.attempts, 1)}, transport={trace.transport}, "
+                f"{trace.label} vẫn đang xử lý: giai đoạn={trace.phase}, "
+                f"tổng={elapsed:.1f}s, hoạt động gần nhất={idle:.1f}s trước, "
+                f"lần thử={max(trace.attempts, 1)}, transport={trace.transport}, "
                 f"chunks={trace.response_chunks}, bytes={trace.response_bytes}"
             )
 
@@ -624,7 +624,7 @@ class Agent:
         request_started_at = time.monotonic()
         if trace is not None:
             trace.transport = "stream"
-            trace.phase = "等待流式响应头"
+            trace.phase = "Chờ header phản hồi streaming"
             trace.last_activity_at = request_started_at
         try:
             async with client.stream(
@@ -637,7 +637,7 @@ class Agent:
                 if trace is not None:
                     now = time.monotonic()
                     trace.response_header_seconds = now - request_started_at
-                    trace.phase = "读取流式响应"
+                    trace.phase = "Đọc phản hồi streaming"
                     trace.last_activity_at = now
                 if response.is_error:
                     await response.aread()
@@ -667,7 +667,7 @@ class Agent:
                         break
                     except TimeoutError as exc:
                         raise httpx.ReadTimeout(
-                            f"流式响应连续 {self.stream_idle_timeout_seconds} 秒无活动",
+                            f"Phản hồi streaming không có hoạt động liên tục trong {self.stream_idle_timeout_seconds} giây",
                             request=response.request,
                         ) from exc
                     if not chunk:
@@ -692,8 +692,8 @@ class Agent:
             if stream_error.response.status_code not in {400, 404, 405, 415, 422, 501}:
                 raise
             self.logger.warning(
-                f"当前 LLM 接口拒绝流式请求 ({stream_error.response.status_code})，"
-                "尝试兼容非流式响应。"
+                f"Giao diện LLM hiện tại từ chối yêu cầu streaming ({stream_error.response.status_code}), "
+                "thử chuyển sang phản hồi non-streaming."
             )
             self._streaming_disabled = True
             result = await self._request_non_stream_async(client, data, headers)
@@ -710,7 +710,7 @@ class Agent:
         request_started_at = time.monotonic()
         if trace is not None:
             trace.transport = "non-stream"
-            trace.phase = "等待非流式完整响应"
+            trace.phase = "Chờ phản hồi non-streaming đầy đủ"
             trace.last_activity_at = request_started_at
         total_timeout = asyncio.timeout(self.non_stream_total_timeout_seconds)
         try:
@@ -728,12 +728,12 @@ class Agent:
                     trace.response_chunks += 1
                     trace.response_bytes += len(response.content)
                     trace.last_activity_at = now
-                    trace.phase = "解析非流式响应"
+                    trace.phase = "Phân tích phản hồi non-streaming"
         except TimeoutError as exc:
             if not total_timeout.expired():
                 raise
             raise httpx.ReadTimeout(
-                f"非流式请求超过硬总时限 {self.non_stream_total_timeout_seconds} 秒"
+                f"Yêu cầu non-streaming vượt quá giới hạn thời gian tổng cứng {self.non_stream_total_timeout_seconds} giây"
             ) from exc
         response.raise_for_status()
         return _parse_response_json(response)
@@ -808,8 +808,8 @@ class Agent:
             if stream_error.response.status_code not in {400, 404, 405, 415, 422, 501}:
                 raise
             self.logger.warning(
-                f"当前 LLM 接口拒绝流式请求 ({stream_error.response.status_code})，"
-                "尝试兼容非流式响应。"
+                f"Giao diện LLM hiện tại từ chối yêu cầu streaming ({stream_error.response.status_code}), "
+                "thử chuyển sang phản hồi non-streaming."
             )
             self._streaming_disabled = True
             response = client.post(
@@ -897,7 +897,7 @@ class Agent:
                 data.update(self._extra_body_data)
             else:
                 self.logger.warning(
-                    "无法解析 extra_body JSON: "
+                    "Không thể phân tích extra_body JSON: "
                     f"chars={len(self.extra_body)}, id={_text_fingerprint(self.extra_body)}"
                 )
 
@@ -927,7 +927,7 @@ class Agent:
         """
         if continue_count >= MAX_CONTINUE_FETCHES:
             self.logger.warning(
-                f"已达到最大继续获取次数 ({MAX_CONTINUE_FETCHES})，返回已累计结果 ({len(accumulated_result)} 字符)")
+                f"Đã đạt số lần tiếp tục lấy tối đa ({MAX_CONTINUE_FETCHES}), trả về kết quả đã tích lũy ({len(accumulated_result)} ký tự)")
             # 移除可能存在的 <think> 块
             accumulated_result = self._sanitize_result(accumulated_result)
             return (
@@ -937,7 +937,7 @@ class Agent:
             )
 
         self.logger.info(
-            f"继续获取剩余内容 (已累计 {len(accumulated_result)} 字符, 第 {continue_count + 1}/{MAX_CONTINUE_FETCHES} 次)...")
+            f"Tiếp tục lấy nội dung còn lại (đã tích lũy {len(accumulated_result)} ký tự, lần {continue_count + 1}/{MAX_CONTINUE_FETCHES})...")
 
         # 构造继续请求的提示
         # 调用子类的 get_continue_prompt 方法，允许子类自定义继续获取的行为
@@ -958,7 +958,7 @@ class Agent:
             # 安全提取 choices 和 content
             choices = response_data.get("choices", [])
             if not choices:
-                raise ValueError("API响应格式错误：缺少 choices 字段")
+                raise ValueError("Phản hồi API sai định dạng: thiếu trường choices")
 
             choice = choices[0]
             finish_reason = choice.get("finish_reason", None)
@@ -999,24 +999,24 @@ class Agent:
                 )
             except PartialAgentResultError as e:
                 # 继续获取成功但结果部分不完整，返回已合并的部分结果
-                self.logger.warning(f"继续获取完成但结果部分不完整: {e}")
+                self.logger.warning(f"Tiếp tục lấy đã xong nhưng kết quả chưa đầy đủ: {e}")
                 if e.partial_result:
                     return e.partial_result
                 # 如果没有部分结果，尝试从已获取的内容中解析
                 return accumulated_result
             except AgentResultError as e:
                 # 继续获取成功但结果完全无效
-                self.logger.warning(f"继续获取完成但结果无效: {e}")
+                self.logger.warning(f"Tiếp tục lấy đã xong nhưng kết quả không hợp lệ: {e}")
                 return accumulated_result
 
         except (httpx.HTTPStatusError, httpx.RequestError, KeyError, IndexError, ValueError) as e:
-            self.logger.error(f"继续获取内容失败: {repr(e)}")
+            self.logger.error(f"Tiếp tục lấy nội dung thất bại: {repr(e)}")
             # 续写请求同样要享受重试策略：以前这里直接吞掉异常并把【被截断】的
             # 结果当成功返回，导致缺失分片被回填原文且用户无从察觉。
             if retry_count < self.retry:
                 retry_delay = 0.5 * (2 ** retry_count)
                 self.logger.info(
-                    f"{self._request_label(retry_count)} 续写请求将在 {retry_delay:.1f}s 后重试"
+                    f"{self._request_label(retry_count)} yêu cầu viết tiếp sẽ thử lại sau {retry_delay:.1f}s"
                 )
                 await asyncio.sleep(retry_delay)
                 return await self._continue_fetch_async(
@@ -1034,7 +1034,7 @@ class Agent:
             # 重试耗尽：退化返回已获取的部分结果，而不是报错
             if accumulated_result:
                 self.logger.warning(
-                    f"续写请求重试耗尽，返回已获取的部分结果 ({len(accumulated_result)} 字符)"
+                    f"Đã hết lượt thử lại yêu cầu viết tiếp, trả về kết quả một phần đã lấy ({len(accumulated_result)} ký tự)"
                 )
                 # 即使是部分结果，也尝试清理一下
                 accumulated_result = self._sanitize_result(accumulated_result)
@@ -1077,12 +1077,12 @@ class Agent:
         trace = _REQUEST_LOG_TRACE.get()
         if trace is not None:
             trace.attempts = max(trace.attempts, retry_count + 1)
-            trace.phase = "等待 RPM/TPM 配额"
+            trace.phase = "Chờ hạn mức RPM/TPM"
             trace.last_activity_at = time.monotonic()
         rate_limit_wait = await self.rate_limiter.acquire_async(tokens=estimated_tokens)
         if trace is not None:
             trace.rate_limit_wait += rate_limit_wait
-            trace.phase = "发送 LLM 请求"
+            trace.phase = "Gửi yêu cầu LLM"
             trace.last_activity_at = time.monotonic()
 
         headers, data = self._prepare_request_data(prompt, system_prompt, json_format=force_json)
@@ -1100,7 +1100,7 @@ class Agent:
             # 检查 finish_reason
             choices = response_data.get("choices", [])
             if not choices:
-                raise ValueError("API响应格式错误：缺少 choices 字段")
+                raise ValueError("Phản hồi API sai định dạng: thiếu trường choices")
 
             finish_reason = choices[0].get("finish_reason", None)
             result = choices[0].get("message", {}).get("content", "")
@@ -1112,7 +1112,7 @@ class Agent:
             elif finish_reason == "length":
                 # 长度限制，尝试继续获取
                 self.logger.warning(
-                    f"{self._request_label(retry_count)} 响应因长度限制被截断，尝试继续获取"
+                    f"{self._request_label(retry_count)} phản hồi bị cắt do giới hạn độ dài, thử tiếp tục lấy"
                 )
                 # 注意：这里传入原始result，清理工作在 _continue_fetch_async 最终返回时统一处理
                 # 传入【未经过 pre_send_handler】的原始 prompt/system_prompt：续写路径会
@@ -1132,7 +1132,7 @@ class Agent:
                 # 工具调用场景，当前代码可能不支持，直接返回已获取结果
                 self.logger.warning(
                     f"{self._request_label(retry_count)} finish_reason={finish_reason}，"
-                    "当前不支持工具调用，返回已获取内容"
+                    "Hiện chưa hỗ trợ gọi công cụ, trả về nội dung đã lấy"
                 )
                 result = self._sanitize_result(result)
                 return result if result else (
@@ -1141,22 +1141,22 @@ class Agent:
                 )
             elif finish_reason == "content_filter":
                 # 内容被过滤
-                self.logger.error(f"{self._request_label(retry_count)} 响应内容被过滤")
-                raise ValueError("内容被过滤")
+                self.logger.error(f"{self._request_label(retry_count)} nội dung phản hồi bị lọc")
+                raise ValueError("Nội dung bị lọc")
             elif finish_reason is None:
                 # 某些 API 可能不返回 finish_reason，将其视为正常结束
                 self.logger.debug(
-                    f"{self._request_label(retry_count)} API未返回 finish_reason，视为正常结束"
+                    f"{self._request_label(retry_count)} API không trả về finish_reason, coi như kết thúc bình thường"
                 )
             else:
                 # 其他未知的 finish_reason，记录警告并返回结果
                 self.logger.warning(
-                    f"{self._request_label(retry_count)} 未知 finish_reason={finish_reason}，"
-                    "返回已获取内容"
+                    f"{self._request_label(retry_count)} finish_reason không xác định={finish_reason}, "
+                    "trả về nội dung đã lấy"
                 )
 
             if retry_count > 0:
-                self.logger.info(f"{self._request_label(retry_count)} 重试成功")
+                self.logger.info(f"{self._request_label(retry_count)} thử lại thành công")
 
             # 清理 <think> 标签后再处理结果
             result = self._sanitize_result(result)
@@ -1169,14 +1169,14 @@ class Agent:
 
         except AgentResultError as e:
             self._log_attempt_failure(
-                f"AI返回结果有误: {_safe_error_text(e)}",
+                f"Kết quả AI trả về có lỗi: {_safe_error_text(e)}",
                 retry=retry,
                 retry_count=retry_count,
             )
             should_retry = True
         except PartialAgentResultError as e:
             self._log_attempt_failure(
-                f"收到部分返回结果: {_safe_error_text(e)}",
+                f"Nhận được một phần kết quả: {_safe_error_text(e)}",
                 retry=retry,
                 retry_count=retry_count,
             )
@@ -1189,7 +1189,7 @@ class Agent:
         except httpx.HTTPStatusError as e:
             request_id = e.response.headers.get("x-request-id", "-")
             self._log_attempt_failure(
-                f"LLM HTTP状态错误: status={e.response.status_code}, "
+                f"Lỗi trạng thái HTTP của LLM: status={e.response.status_code}, "
                 f"request_id={request_id}, body={_safe_error_text(e.response.text)}",
                 retry=retry,
                 retry_count=retry_count,
@@ -1198,32 +1198,32 @@ class Agent:
             is_hard_error = True
             # 如果是因为 Rate Limit (429) 错误，最好在这里多睡一会儿，虽然我们有了本地 Limiter
             if e.response.status_code == 429:
-                self.logger.info(f"{self._request_label(retry_count)} 触发限流，等待 5.0s")
+                self.logger.info(f"{self._request_label(retry_count)} bị giới hạn tốc độ, chờ 5.0s")
                 await asyncio.sleep(5)
 
         except httpx.RequestError as e:
             if isinstance(e, httpx.TimeoutException):
                 detail = _safe_error_text(e)
-                if "流式响应连续" in detail:
-                    message = f"流式空闲超时: {detail}"
-                elif "非流式请求超过硬总时限" in detail:
-                    message = f"非流式硬总超时: {detail}"
+                if "Phản hồi streaming không có hoạt động liên tục" in detail:
+                    message = f"Hết thời gian chờ streaming nhàn rỗi: {detail}"
+                elif "Yêu cầu non-streaming vượt quá giới hạn thời gian tổng cứng" in detail:
+                    message = f"Hết thời gian tổng cứng non-streaming: {detail}"
                 else:
-                    message = f"网络阶段超时: {type(e).__name__}: {detail}"
+                    message = f"Hết thời gian chờ ở giai đoạn mạng: {type(e).__name__}: {detail}"
             elif isinstance(e, httpx.ReadError):
                 message = (
-                    f"读取响应失败: {type(e).__name__}: {_safe_error_text(e)} "
-                    "(服务器可能关闭连接或网络中断)"
+                    f"Đọc phản hồi thất bại: {type(e).__name__}: {_safe_error_text(e)} "
+                    "(máy chủ có thể đã đóng kết nối hoặc mạng bị gián đoạn)"
                 )
             elif isinstance(e, httpx.ConnectError):
                 message = (
-                    f"连接失败: {type(e).__name__}: {_safe_error_text(e)} "
-                    "(请检查网络或 base_url)"
+                    f"Kết nối thất bại: {type(e).__name__}: {_safe_error_text(e)} "
+                    "(vui lòng kiểm tra mạng hoặc base_url)"
                 )
             elif isinstance(e, httpx.WriteError):
-                message = f"发送请求数据失败: {type(e).__name__}: {_safe_error_text(e)}"
+                message = f"Gửi dữ liệu yêu cầu thất bại: {type(e).__name__}: {_safe_error_text(e)}"
             else:
-                message = f"网络请求错误: {type(e).__name__}: {_safe_error_text(e)}"
+                message = f"Lỗi yêu cầu mạng: {type(e).__name__}: {_safe_error_text(e)}"
             self._log_attempt_failure(
                 message,
                 retry=retry,
@@ -1233,7 +1233,7 @@ class Agent:
             is_hard_error = True
         except (KeyError, IndexError, ValueError, json.JSONDecodeError) as e:
             self._log_attempt_failure(
-                f"LLM响应格式或值错误: {_safe_error_text(repr(e))}",
+                f"Lỗi định dạng hoặc giá trị phản hồi LLM: {_safe_error_text(repr(e))}",
                 retry=retry,
                 retry_count=retry_count,
             )
@@ -1247,7 +1247,7 @@ class Agent:
             if is_hard_error:
                 if retry_count == 0:
                     if self.total_error_counter.add():
-                        self.logger.error("错误次数过多，已达到上限，不再重试。")
+                        self.logger.error("Số lỗi quá nhiều, đã đạt giới hạn, không thử lại nữa.")
                         with self.unresolved_error_lock:
                             self.unresolved_error_count += 1
                         return (
@@ -1260,7 +1260,7 @@ class Agent:
                             )
                         )
                 elif self.total_error_counter.reach_limit():
-                    self.logger.error("错误次数过多，已达到上限，不再为该请求重试。")
+                    self.logger.error("Số lỗi quá nhiều, đã đạt giới hạn, không thử lại yêu cầu này nữa.")
                     with self.unresolved_error_lock:
                         self.unresolved_error_count += 1
                     return (
@@ -1276,7 +1276,7 @@ class Agent:
             # 指数退避
             retry_delay = 0.5 * (2 ** retry_count)
             self.logger.info(
-                f"{self._request_label(retry_count)} 将在 {retry_delay:.1f}s 后重试"
+                f"{self._request_label(retry_count)} sẽ thử lại sau {retry_delay:.1f}s"
             )
             await asyncio.sleep(retry_delay)
             return await self.send_async(
@@ -1293,13 +1293,13 @@ class Agent:
             )
         else:
             if should_retry:
-                self.logger.error(f"{self._request_label(retry_count)} 所有尝试均失败")
+                self.logger.error(f"{self._request_label(retry_count)} tất cả lần thử đều thất bại")
                 with self.unresolved_error_lock:
                     self.unresolved_error_count += 1
 
             if best_partial_result:
                 self.logger.info(
-                    f"{self._request_label(retry_count)} 存在部分翻译结果，将使用该结果"
+                    f"{self._request_label(retry_count)} có kết quả dịch một phần, sẽ dùng kết quả này"
                 )
                 return best_partial_result
 
@@ -1334,7 +1334,7 @@ class Agent:
             f"connect:{self.timeout.connect}s,write:{self.timeout.write}s,pool:{self.timeout.pool}s),"
             f"system_proxy:{self.system_proxy_enable},json_output:{force_json}"
         )
-        self.logger.info(f"预计发送{total}个请求")
+        self.logger.info(f"Dự kiến gửi {total} yêu cầu")
 
         # 每个批次重新开始错误预算：计数器由 Agent 实例持有，若不重置，
         # 复用同一实例处理多份文档时上一批的错误会提前耗尽本批额度，
@@ -1377,11 +1377,11 @@ class Agent:
                     async with semaphore:
                         trace.started_at = time.monotonic()
                         trace.last_activity_at = trace.started_at
-                        trace.phase = "准备请求"
+                        trace.phase = "Chuẩn bị yêu cầu"
                         queue_wait = trace.started_at - trace.queued_at
                         prompt_estimate = self._estimate_tokens(p_text)
                         self.logger.info(
-                            f"{trace.label} 开始: id={_text_fingerprint(p_text)}, "
+                            f"{trace.label} bắt đầu: id={_text_fingerprint(p_text)}, "
                             f"chars={len(p_text)}, estimated_tokens={prompt_estimate}, "
                             f"queue_wait={queue_wait:.2f}s"
                         )
@@ -1410,9 +1410,9 @@ class Agent:
                                 if not total_timeout.expired():
                                     raise
                                 self.logger.error(
-                                    f"{trace.label} 非流式分片硬总超时: "
+                                    f"{trace.label} phân đoạn non-streaming vượt thời gian tổng cứng: "
                                     f"limit={self.non_stream_total_timeout_seconds}s，"
-                                    "已终止并使用降级结果"
+                                    "đã dừng và dùng kết quả dự phòng"
                                 )
                                 with self.unresolved_error_lock:
                                     self.unresolved_error_count += 1
@@ -1427,7 +1427,7 @@ class Agent:
 
                     count += 1
                     completed_at = time.monotonic()
-                    trace.phase = "完成"
+                    trace.phase = "Hoàn tất"
                     trace.last_activity_at = completed_at
                     total_elapsed = completed_at - trace.queued_at
                     queue_wait = (trace.started_at or trace.queued_at) - trace.queued_at
@@ -1442,7 +1442,7 @@ class Agent:
                         else "n/a"
                     )
                     self.logger.info(
-                        f"{trace.label} 完成: progress={count}/{total}, "
+                        f"{trace.label} hoàn tất: progress={count}/{total}, "
                         f"total={total_elapsed:.2f}s, queue={queue_wait:.2f}s, "
                         f"rate_limit={trace.rate_limit_wait:.2f}s, "
                         f"headers={response_headers}, first_data={first_data}, "
@@ -1454,12 +1454,12 @@ class Agent:
                         self.progress_callback(count, total)
                     return result
                 except asyncio.CancelledError:
-                    self.logger.info(f"{trace.label} 已取消")
+                    self.logger.info(f"{trace.label} đã hủy")
                     raise
                 except Exception as exc:
                     elapsed = time.monotonic() - trace.queued_at
                     self.logger.error(
-                        f"{trace.label} 异常结束: elapsed={elapsed:.2f}s, "
+                        f"{trace.label} kết thúc bất thường: elapsed={elapsed:.2f}s, "
                         f"type={type(exc).__name__}, detail={_safe_error_text(exc)}"
                     )
                     raise
@@ -1481,7 +1481,7 @@ class Agent:
             # 让后续请求更可能复用刚持久化的稳定 prompt 前缀。
             warmup_count = 2 if self.provider == "deepseek" and total >= 3 else 0
             if warmup_count:
-                self.logger.info("DeepSeek缓存预热: 顺序处理前2个分片")
+                self.logger.info("Làm nóng cache DeepSeek: xử lý tuần tự 2 phân đoạn đầu")
                 for prompt_index in range(1, warmup_count + 1):
                     await send_and_store(prompts[prompt_index - 1], prompt_index)
 
@@ -1495,7 +1495,7 @@ class Agent:
                 await asyncio.gather(*tasks, return_exceptions=False)
 
             self.logger.info(
-                f"所有请求处理完毕: requests={total}, "
+                f"Đã xử lý xong tất cả yêu cầu: requests={total}, "
                 f"unresolved_errors={self.unresolved_error_count}"
             )
 
@@ -1506,7 +1506,7 @@ class Agent:
                 else 0.0
             )
             self.logger.info(
-                f"Token使用统计: input={token_stats['input_tokens']}, "
+                f"Thống kê sử dụng Token: input={token_stats['input_tokens']}, "
                 f"cached={token_stats['cached_tokens']}, cache_hit_rate={cache_hit_rate:.1%}, "
                 f"output={token_stats['output_tokens']}, "
                 f"reasoning={token_stats['reasoning_tokens']}, "
@@ -1536,7 +1536,7 @@ class Agent:
         """
         if continue_count >= MAX_CONTINUE_FETCHES:
             self.logger.warning(
-                f"已达到最大继续获取次数 ({MAX_CONTINUE_FETCHES})，返回已累计结果 ({len(accumulated_result)} 字符)")
+                f"Đã đạt số lần tiếp tục lấy tối đa ({MAX_CONTINUE_FETCHES}), trả về kết quả đã tích lũy ({len(accumulated_result)} ký tự)")
             # 清理
             accumulated_result = self._sanitize_result(accumulated_result)
             return (
@@ -1546,7 +1546,7 @@ class Agent:
             )
 
         self.logger.info(
-            f"继续获取剩余内容 (已累计 {len(accumulated_result)} 字符, 第 {continue_count + 1}/{MAX_CONTINUE_FETCHES} 次)...")
+            f"Tiếp tục lấy nội dung còn lại (đã tích lũy {len(accumulated_result)} ký tự, lần {continue_count + 1}/{MAX_CONTINUE_FETCHES})...")
 
         # 构造继续请求的提示
         # 调用子类的 get_continue_prompt 方法，允许子类自定义继续获取的行为
@@ -1566,7 +1566,7 @@ class Agent:
             # 安全提取 choices 和 content
             choices = response_data.get("choices", [])
             if not choices:
-                raise ValueError("API响应格式错误：缺少 choices 字段")
+                raise ValueError("Phản hồi API sai định dạng: thiếu trường choices")
 
             choice = choices[0]
             finish_reason = choice.get("finish_reason", None)
@@ -1606,23 +1606,23 @@ class Agent:
                 )
             except PartialAgentResultError as e:
                 # 继续获取成功但结果部分不完整，返回已合并的部分结果
-                self.logger.warning(f"继续获取完成但结果部分不完整: {e}")
+                self.logger.warning(f"Tiếp tục lấy đã xong nhưng kết quả chưa đầy đủ: {e}")
                 if e.partial_result:
                     return e.partial_result
                 # 如果没有部分结果，尝试从已获取的内容中解析
                 return accumulated_result
             except AgentResultError as e:
                 # 继续获取成功但结果完全无效
-                self.logger.warning(f"继续获取完成但结果无效: {e}")
+                self.logger.warning(f"Tiếp tục lấy đã xong nhưng kết quả không hợp lệ: {e}")
                 return accumulated_result
 
         except (httpx.HTTPStatusError, httpx.RequestError, KeyError, IndexError, ValueError) as e:
-            self.logger.error(f"继续获取内容失败: {repr(e)}")
+            self.logger.error(f"Tiếp tục lấy nội dung thất bại: {repr(e)}")
             # 与异步实现保持一致：续写请求也要重试，而不是把截断结果当成功返回。
             if retry_count < self.retry:
                 retry_delay = 0.5 * (2 ** retry_count)
                 self.logger.info(
-                    f"{self._request_label(retry_count)} 续写请求将在 {retry_delay:.1f}s 后重试"
+                    f"{self._request_label(retry_count)} yêu cầu viết tiếp sẽ thử lại sau {retry_delay:.1f}s"
                 )
                 time.sleep(retry_delay)
                 return self._continue_fetch(
@@ -1640,7 +1640,7 @@ class Agent:
             # 重试耗尽：退化返回已获取的部分结果，而不是报错
             if accumulated_result:
                 self.logger.warning(
-                    f"续写请求重试耗尽，返回已获取的部分结果 ({len(accumulated_result)} 字符)"
+                    f"Đã hết lượt thử lại yêu cầu viết tiếp, trả về kết quả một phần đã lấy ({len(accumulated_result)} ký tự)"
                 )
                 accumulated_result = self._sanitize_result(accumulated_result)
                 return (
@@ -1679,11 +1679,11 @@ class Agent:
         trace = _REQUEST_LOG_TRACE.get()
         if trace is not None:
             trace.attempts = max(trace.attempts, retry_count + 1)
-            trace.phase = "等待 RPM/TPM 配额"
+            trace.phase = "Chờ hạn mức RPM/TPM"
         rate_limit_wait = self.rate_limiter.acquire_sync(tokens=estimated_tokens)
         if trace is not None:
             trace.rate_limit_wait += rate_limit_wait
-            trace.phase = "发送 LLM 请求"
+            trace.phase = "Gửi yêu cầu LLM"
             trace.last_activity_at = time.monotonic()
 
         headers, data = self._prepare_request_data(prompt, system_prompt, json_format=force_json)
@@ -1700,7 +1700,7 @@ class Agent:
             # 检查 finish_reason
             choices = response_data.get("choices", [])
             if not choices:
-                raise ValueError("API响应格式错误：缺少 choices 字段")
+                raise ValueError("Phản hồi API sai định dạng: thiếu trường choices")
 
             finish_reason = choices[0].get("finish_reason", None)
             result = choices[0].get("message", {}).get("content", "")
@@ -1712,7 +1712,7 @@ class Agent:
             elif finish_reason == "length":
                 # 长度限制，尝试继续获取
                 self.logger.warning(
-                    f"{self._request_label(retry_count)} 响应因长度限制被截断，尝试继续获取"
+                    f"{self._request_label(retry_count)} phản hồi bị cắt do giới hạn độ dài, thử tiếp tục lấy"
                 )
                 # 注意：这里传入原始result，清理工作在 _continue_fetch 最终返回时统一处理
                 # 传入未加工的 prompt/system_prompt，避免 pre_send_handler 被应用两次。
@@ -1731,7 +1731,7 @@ class Agent:
                 # 工具调用场景，当前代码可能不支持，直接返回已获取结果
                 self.logger.warning(
                     f"{self._request_label(retry_count)} finish_reason={finish_reason}，"
-                    "当前不支持工具调用，返回已获取内容"
+                    "Hiện chưa hỗ trợ gọi công cụ, trả về nội dung đã lấy"
                 )
                 result = self._sanitize_result(result)
                 return result if result else (
@@ -1740,22 +1740,22 @@ class Agent:
                 )
             elif finish_reason == "content_filter":
                 # 内容被过滤
-                self.logger.error(f"{self._request_label(retry_count)} 响应内容被过滤")
-                raise ValueError("内容被过滤")
+                self.logger.error(f"{self._request_label(retry_count)} nội dung phản hồi bị lọc")
+                raise ValueError("Nội dung bị lọc")
             elif finish_reason is None:
                 # 某些 API 可能不返回 finish_reason，将其视为正常结束
                 self.logger.debug(
-                    f"{self._request_label(retry_count)} API未返回 finish_reason，视为正常结束"
+                    f"{self._request_label(retry_count)} API không trả về finish_reason, coi như kết thúc bình thường"
                 )
             else:
                 # 其他未知的 finish_reason，记录警告并返回结果
                 self.logger.warning(
-                    f"{self._request_label(retry_count)} 未知 finish_reason={finish_reason}，"
-                    "返回已获取内容"
+                    f"{self._request_label(retry_count)} finish_reason không xác định={finish_reason}, "
+                    "trả về nội dung đã lấy"
                 )
 
             if retry_count > 0:
-                self.logger.info(f"{self._request_label(retry_count)} 重试成功")
+                self.logger.info(f"{self._request_label(retry_count)} thử lại thành công")
 
             # 清理 <think> 标签后再处理结果
             result = self._sanitize_result(result)
@@ -1767,14 +1767,14 @@ class Agent:
             )
         except AgentResultError as e:
             self._log_attempt_failure(
-                f"AI返回结果有误: {_safe_error_text(e)}",
+                f"Kết quả AI trả về có lỗi: {_safe_error_text(e)}",
                 retry=retry,
                 retry_count=retry_count,
             )
             should_retry = True
         except PartialAgentResultError as e:
             self._log_attempt_failure(
-                f"收到部分翻译结果: {_safe_error_text(e)}",
+                f"Nhận được một phần kết quả dịch: {_safe_error_text(e)}",
                 retry=retry,
                 retry_count=retry_count,
             )
@@ -1787,7 +1787,7 @@ class Agent:
         except httpx.HTTPStatusError as e:
             request_id = e.response.headers.get("x-request-id", "-")
             self._log_attempt_failure(
-                f"LLM HTTP状态错误: status={e.response.status_code}, "
+                f"Lỗi trạng thái HTTP của LLM: status={e.response.status_code}, "
                 f"request_id={request_id}, body={_safe_error_text(e.response.text)}",
                 retry=retry,
                 retry_count=retry_count,
@@ -1795,32 +1795,32 @@ class Agent:
             should_retry = True
             is_hard_error = True
             if e.response.status_code == 429:
-                self.logger.info(f"{self._request_label(retry_count)} 触发限流，等待 5.0s")
+                self.logger.info(f"{self._request_label(retry_count)} bị giới hạn tốc độ, chờ 5.0s")
                 time.sleep(5)
 
         except httpx.RequestError as e:
             if isinstance(e, httpx.TimeoutException):
                 detail = _safe_error_text(e)
-                if "流式响应连续" in detail:
-                    message = f"流式空闲超时: {detail}"
-                elif "非流式请求超过硬总时限" in detail:
-                    message = f"非流式硬总超时: {detail}"
+                if "Phản hồi streaming không có hoạt động liên tục" in detail:
+                    message = f"Hết thời gian chờ streaming nhàn rỗi: {detail}"
+                elif "Yêu cầu non-streaming vượt quá giới hạn thời gian tổng cứng" in detail:
+                    message = f"Hết thời gian tổng cứng non-streaming: {detail}"
                 else:
-                    message = f"网络阶段超时: {type(e).__name__}: {detail}"
+                    message = f"Hết thời gian chờ ở giai đoạn mạng: {type(e).__name__}: {detail}"
             elif isinstance(e, httpx.ReadError):
                 message = (
-                    f"读取响应失败: {type(e).__name__}: {_safe_error_text(e)} "
-                    "(服务器可能关闭连接或网络中断)"
+                    f"Đọc phản hồi thất bại: {type(e).__name__}: {_safe_error_text(e)} "
+                    "(máy chủ có thể đã đóng kết nối hoặc mạng bị gián đoạn)"
                 )
             elif isinstance(e, httpx.ConnectError):
                 message = (
-                    f"连接失败: {type(e).__name__}: {_safe_error_text(e)} "
-                    "(请检查网络或 base_url)"
+                    f"Kết nối thất bại: {type(e).__name__}: {_safe_error_text(e)} "
+                    "(vui lòng kiểm tra mạng hoặc base_url)"
                 )
             elif isinstance(e, httpx.WriteError):
-                message = f"发送请求数据失败: {type(e).__name__}: {_safe_error_text(e)}"
+                message = f"Gửi dữ liệu yêu cầu thất bại: {type(e).__name__}: {_safe_error_text(e)}"
             else:
-                message = f"网络请求错误: {type(e).__name__}: {_safe_error_text(e)}"
+                message = f"Lỗi yêu cầu mạng: {type(e).__name__}: {_safe_error_text(e)}"
             self._log_attempt_failure(
                 message,
                 retry=retry,
@@ -1830,7 +1830,7 @@ class Agent:
             is_hard_error = True
         except (KeyError, IndexError, ValueError, json.JSONDecodeError) as e:
             self._log_attempt_failure(
-                f"LLM响应格式或值错误: {_safe_error_text(repr(e))}",
+                f"Lỗi định dạng hoặc giá trị phản hồi LLM: {_safe_error_text(repr(e))}",
                 retry=retry,
                 retry_count=retry_count,
             )
@@ -1844,7 +1844,7 @@ class Agent:
             if is_hard_error:
                 if retry_count == 0:
                     if self.total_error_counter.add():
-                        self.logger.error("错误次数过多，已达到上限，不再重试。")
+                        self.logger.error("Số lỗi quá nhiều, đã đạt giới hạn, không thử lại nữa.")
                         with self.unresolved_error_lock:
                             self.unresolved_error_count += 1
                         return (
@@ -1857,7 +1857,7 @@ class Agent:
                             )
                         )
                 elif self.total_error_counter.reach_limit():
-                    self.logger.error("错误次数过多，已达到上限，不再为该请求重试。")
+                    self.logger.error("Số lỗi quá nhiều, đã đạt giới hạn, không thử lại yêu cầu này nữa.")
                     with self.unresolved_error_lock:
                         self.unresolved_error_count += 1
                     return (
@@ -1872,7 +1872,7 @@ class Agent:
 
             retry_delay = 0.5 * (2 ** retry_count)
             self.logger.info(
-                f"{self._request_label(retry_count)} 将在 {retry_delay:.1f}s 后重试"
+                f"{self._request_label(retry_count)} sẽ thử lại sau {retry_delay:.1f}s"
             )
             time.sleep(retry_delay)
             return self.send(
@@ -1889,13 +1889,13 @@ class Agent:
             )
         else:
             if should_retry:
-                self.logger.error(f"{self._request_label(retry_count)} 所有尝试均失败")
+                self.logger.error(f"{self._request_label(retry_count)} tất cả lần thử đều thất bại")
                 with self.unresolved_error_lock:
                     self.unresolved_error_count += 1
 
             if best_partial_result:
                 self.logger.info(
-                    f"{self._request_label(retry_count)} 存在部分翻译结果，将使用该结果"
+                    f"{self._request_label(retry_count)} có kết quả dịch một phần, sẽ dùng kết quả này"
                 )
                 return best_partial_result
 
