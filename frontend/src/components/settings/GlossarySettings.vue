@@ -110,17 +110,17 @@
                         v-model="form.glossary_agent_to_lang"
                         @change="saveSetting('glossary_agent_to_lang', form.glossary_agent_to_lang)"
                     >
-                        <option value="Simplified Chinese">中文(简体中文)</option>
-                        <option value="English">英文(English)</option>
-                        <option value="Spanish">西班牙文(Español)</option>
-                        <option value="French">法文(Français)</option>
-                        <option value="German">德文(Deutsch)</option>
-                        <option value="Japanese">日文(日本語)</option>
-                        <option value="Korean">韩文(한국어)</option>
-                        <option value="Russian">俄文(Русский)</option>
-                        <option value="Portuguese">葡萄牙文(Português)</option>
-                        <option value="Arabic">阿拉伯文(العَرَبِيَّة)</option>
-                        <option value="Vietnamese">越南文(tiếng Việt)</option>
+                        <option value="Simplified Chinese">Tiếng Trung giản thể (简体中文)</option>
+                        <option value="English">Tiếng Anh (English)</option>
+                        <option value="Spanish">Tiếng Tây Ban Nha (Español)</option>
+                        <option value="French">Tiếng Pháp (Français)</option>
+                        <option value="German">Tiếng Đức (Deutsch)</option>
+                        <option value="Japanese">Tiếng Nhật (日本語)</option>
+                        <option value="Korean">Tiếng Hàn (한국어)</option>
+                        <option value="Russian">Tiếng Nga (Русский)</option>
+                        <option value="Portuguese">Tiếng Bồ Đào Nha (Português)</option>
+                        <option value="Arabic">Tiếng Ả Rập (العَرَبِيَّة)</option>
+                        <option value="Vietnamese">Tiếng Việt</option>
                         <option value="custom">{{ t('targetLanguageCustom') }}</option>
                     </select>
                     <div class="mt-2" v-if="form.glossary_agent_to_lang === 'custom'">
@@ -224,7 +224,7 @@
                         rows="2"
                         placeholder='{"user": "your-id", "other_param": "value"}'
                     ></textarea>
-                    <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">额外的 API 请求参数，JSON 格式，会合并到请求体中</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ t('extraBodyHelp') }}</div>
                 </div>
 
                 <div class="mb-4">

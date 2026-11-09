@@ -14,7 +14,7 @@ class OpenRouterAdapter(ReasoningAdapter):
             return reasoning_decision(
                 "mandatory",
                 "effort",
-                warning=f"OpenRouter 模型 {model_id} 标记为强制思考，已使用模型默认行为。",
+                warning=f"Mô hình OpenRouter {model_id} được đánh dấu bắt buộc suy nghĩ, đã dùng hành vi mặc định của mô hình.",
             )
         reasoning = (
             {"enabled": True, "exclude": True}

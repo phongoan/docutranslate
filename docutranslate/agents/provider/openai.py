@@ -23,13 +23,13 @@ class OpenAIAdapter(ReasoningAdapter):
             return reasoning_decision(
                 "unsupported",
                 "none",
-                warning=f"模型 {model_id} 不支持可配置思考模式，已忽略 {intent}。",
+                warning=f"Mô hình {model_id} không hỗ trợ chế độ suy nghĩ có thể cấu hình, đã bỏ qua {intent}.",
             )
         if model.startswith(self._MANDATORY_PREFIXES) and intent == "disable":
             return reasoning_decision(
                 "mandatory",
                 "effort",
-                warning=f"模型 {model_id} 的思考不能可靠关闭，已使用模型默认行为。",
+                warning=f"Không thể tắt suy nghĩ của mô hình {model_id} một cách đáng tin cậy, đã dùng hành vi mặc định của mô hình.",
             )
         # gpt-5-pro 仅支持 high 推理强度，思考无法关闭。
         if model.startswith("gpt-5-pro"):
@@ -37,8 +37,8 @@ class OpenAIAdapter(ReasoningAdapter):
                 return reasoning_decision(
                     "mandatory",
                     "effort",
-                    warning=f"模型 {model_id} 仅支持 high 推理强度且无法关闭思考，"
-                    "已使用模型默认行为。",
+                    warning=f"Mô hình {model_id} chỉ hỗ trợ mức suy luận high và không thể tắt suy nghĩ, "
+                    "đã dùng hành vi mặc định của mô hình.",
                 )
             return reasoning_decision(
                 "optional",

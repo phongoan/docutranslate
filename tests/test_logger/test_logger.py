@@ -123,8 +123,8 @@ async def test_batch_logs_context_without_prompt_or_endpoint_credentials(monkeyp
     output = stream.getvalue()
 
     assert result == ["translated"]
-    assert "[分片 1/1] 开始" in output
-    assert "[分片 1/1] 完成" in output
+    assert "[Phân đoạn 1/1] bắt đầu" in output
+    assert "[Phân đoạn 1/1] hoàn tất" in output
     assert "id=" in output
     assert "private document content" not in output
     assert "endpoint-user" not in output

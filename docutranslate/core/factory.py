@@ -163,4 +163,4 @@ def create_workflow_from_payload(payload: TranslatePayload, logger: logging.Logg
             workflow._html_cdn_explicit = bool(payload.html_exporter_options and payload.html_exporter_options.cdn is not None)
             return workflow
 
-    raise ValueError(f"未知的 Payload 类型: {type(payload)}")
+    raise ValueError(f"Loại Payload không xác định: {type(payload)}")

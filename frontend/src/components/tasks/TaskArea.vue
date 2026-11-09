@@ -34,7 +34,7 @@
                     <Heroicon name="PlusIcon" class="w-4 h-4" />
                     <span>{{ t('newTaskBtn') }}</span>
                 </button>
-                <Tooltip content="设置" placement="top">
+                <Tooltip :content="t('settingsTitle')" placement="top">
                     <button
                         type="button"
                         class="p-2 text-sm border border-primary text-primary rounded hover:bg-primary hover:text-white transition-colors"

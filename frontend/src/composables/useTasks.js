@@ -407,7 +407,7 @@ export function useTasks(settings, glossary, i18n) {
         removeFromPendingQueue(task);
         const workflowType = task.detectedWorkflow || form.workflow_type;
         if (!validateForm(errors, workflowType)) {
-            task.statusMessage = t('status_fillRequired') || "请检查左侧配置项 (Please check settings)";
+            task.statusMessage = t('status_fillRequired') || "Vui lòng kiểm tra cấu hình bên trái";
             task.statusClass = 'text-danger';
             return;
         }
@@ -577,7 +577,7 @@ export function useTasks(settings, glossary, i18n) {
             document.execCommand('copy');
             document.body.removeChild(area);
         } catch (err) {
-            console.warn('复制日志失败', err);
+            console.warn('Sao chép nhật ký thất bại', err);
         }
     };
 

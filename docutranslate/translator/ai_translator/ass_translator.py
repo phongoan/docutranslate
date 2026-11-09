@@ -37,7 +37,7 @@ class AssTranslator(AiTranslator):
                     percent = 30 + int((current / total) * 60)
                     self.progress_tracker.update(
                         percent=percent,
-                        message=f"正在翻译 ({current}/{total})"
+                        message=f"Đang dịch ({current}/{total})"
                     )
 
             agent_config = SegmentsTranslateAgentConfig(
@@ -82,13 +82,13 @@ class AssTranslator(AiTranslator):
         # 使用 charset_normalizer 自动检测编码
         result = charset_normalizer.from_bytes(document.content).best()
         if result is None:
-            self.logger.error("无法检测ASS文件编码")
+            self.logger.error("Không thể phát hiện bảng mã của tệp ASS")
             return None, [], []
         detected_encoding = result.encoding
         try:
             content_str = document.content.decode(detected_encoding)
         except (UnicodeDecodeError, AttributeError) as e:
-            self.logger.error(f"无法使用检测到的编码 {detected_encoding} 解码文件: {e}")
+            self.logger.error(f"Không thể dùng bảng mã đã phát hiện {detected_encoding} để giải mã tệp: {e}")
             return None, [], []
 
         subs = pysubs2.SSAFile.from_string(content_str)
@@ -129,7 +129,7 @@ class AssTranslator(AiTranslator):
             elif self.insert_mode == "prepend":
                 line.text = translated_text + ass_separator + original_text
             else:
-                self.logger.error(f"不支持的插入模式: {self.insert_mode}")
+                self.logger.error(f"Chế độ chèn không được hỗ trợ: {self.insert_mode}")
 
         # 输出为字符串，再编码为 bytes
         output_str = subs.to_string(format_="ass")
@@ -139,7 +139,7 @@ class AssTranslator(AiTranslator):
         subs, lines_to_translate, original_texts = self._pre_translate(document)
 
         if subs is None or not lines_to_translate:
-            self.logger.info("未找到需要翻译的字幕行")
+            self.logger.info("Không tìm thấy dòng phụ đề cần dịch")
             return self
 
         if self.glossary_agent:
@@ -166,7 +166,7 @@ class AssTranslator(AiTranslator):
         subs, lines_to_translate, original_texts = await asyncio.to_thread(self._pre_translate, document)
 
         if subs is None or not lines_to_translate:
-            self.logger.info("未找到需要翻译的字幕行")
+            self.logger.info("Không tìm thấy dòng phụ đề cần dịch")
             return self
 
         if self.glossary_agent:

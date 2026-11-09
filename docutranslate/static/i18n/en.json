@@ -225,5 +225,6 @@
   "docxPasswordLabel": "File Password (Optional)",
   "xlsxPasswordLabel": "File Password (Optional)",
   "passwordPlaceholder": "Enter password if file is encrypted",
-  "passwordHelp": "If the file is encrypted, enter the decryption password. Leave empty for unencrypted files."
+  "passwordHelp": "If the file is encrypted, enter the decryption password. Leave empty for unencrypted files.",
+  "settingsTitle": "Settings"
 }

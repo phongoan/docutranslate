@@ -44,7 +44,7 @@ def test_routing_registry_is_shared(suffix):
 
 @pytest.mark.parametrize("suffix", [".doc", ".xls", ".ppt"])
 def test_legacy_office_files_rejected_before_translation(suffix):
-    with pytest.raises(ValueError, match="请先转换"):
+    with pytest.raises(ValueError, match="vui lòng chuyển đổi"):
         resolve_payload({"workflow_type": "auto", "skip_translate": True}, "sample" + suffix)
     assert suffix.lstrip(".") not in Client().capabilities["input_formats"]
 

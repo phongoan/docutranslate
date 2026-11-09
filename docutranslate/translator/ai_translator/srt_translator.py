@@ -43,9 +43,9 @@ def _srt_structural_skip_reason(subtitle: srt.Subtitle) -> str | None:
     是为了让「哪些条目被移除」由本模块显式决定并逐条报告。
     """
     if subtitle.start < timedelta(0):
-        return "起始时间为负"
+        return "thời gian bắt đầu là số âm"
     if subtitle.start >= subtitle.end:
-        return "起始时间不早于结束时间"
+        return "thời gian bắt đầu không sớm hơn thời gian kết thúc"
     return None
 
 
@@ -53,7 +53,7 @@ def _summarize_cue_indices(indices: list[int], limit: int = 10) -> str:
     """把可能很长的条目编号列表压缩成一行日志。"""
     shown = ", ".join(f"#{index}" for index in indices[:limit])
     if len(indices) > limit:
-        shown += f" ...（共 {len(indices)} 条）"
+        shown += f" ... (tổng cộng {len(indices)} mục)"
     return shown
 
 
@@ -78,7 +78,7 @@ class SrtTranslator(AiTranslator):
                     percent = 30 + int((current / total) * 60)
                     self.progress_tracker.update(
                         percent=percent,
-                        message=f"正在翻译 ({current}/{total})"
+                        message=f"Đang dịch ({current}/{total})"
                     )
 
             agent_config = SegmentsTranslateAgentConfig(
@@ -124,20 +124,20 @@ class SrtTranslator(AiTranslator):
         # 使用 charset_normalizer 自动检测编码
         result = charset_normalizer.from_bytes(document.content).best()
         if result is None:
-            self.logger.error("无法检测SRT文件编码")
+            self.logger.error("Không thể phát hiện bảng mã của tệp SRT")
             return [], []
         detected_encoding = result.encoding
         try:
             srt_content = document.content.decode(detected_encoding)
         except (UnicodeDecodeError, AttributeError) as e:
-            self.logger.error(f"无法使用检测到的编码 {detected_encoding} 解码文件: {e}")
+            self.logger.error(f"Không thể dùng bảng mã đã phát hiện {detected_encoding} để giải mã tệp: {e}")
             return [], []
 
         # 使用 srt 库解析内容
         try:
             subtitles = list(srt.parse(srt_content))
         except srt.SRTParseError as e:
-            self.logger.error(f"解析SRT文件失败: {e}")
+            self.logger.error(f"Phân tích tệp SRT thất bại: {e}")
             return [], []
 
         # 提取所有原文文本，准备进行批量翻译
@@ -173,13 +173,13 @@ class SrtTranslator(AiTranslator):
         cue_count = len(subtitles)
         if len(translated_texts) != cue_count:
             logger.error(
-                "译文条目数与字幕条目数不一致（译文 %d 条 / 字幕 %d 条），缺少译文的条目按空内容保留。",
+                "Số mục bản dịch không khớp số mục phụ đề (bản dịch %d mục / phụ đề %d mục), các mục thiếu bản dịch được giữ ở dạng trống.",
                 len(translated_texts), cue_count,
             )
 
         insert_mode = self.insert_mode
         if insert_mode not in ("replace", "append", "prepend"):
-            logger.error(f"不正确的SrtTranslatorConfig参数: insert_mode='{insert_mode}'")
+            logger.error(f"Tham số SrtTranslatorConfig không đúng: insert_mode='{insert_mode}'")
             # 默认回退到替换模式，避免程序中断
             insert_mode = "replace"
 
@@ -218,15 +218,15 @@ class SrtTranslator(AiTranslator):
 
         if untranslated_indices:
             logger.warning(
-                "以下字幕段落译文为空（相邻段落被合并翻译时会出现），已按空内容保留其时间窗（%d 条）：%s",
+                "Các đoạn phụ đề sau có bản dịch trống (xảy ra khi các đoạn liền kề được gộp để dịch), khung thời gian được giữ với nội dung trống (%d mục): %s",
                 len(untranslated_indices), _summarize_cue_indices(untranslated_indices),
             )
         if dropped:
             detail = "; ".join(f"#{index}（{reason}）" for index, reason in dropped[:10])
             if len(dropped) > 10:
-                detail += f" ...（共 {len(dropped)} 条）"
+                detail += f" ... (tổng cộng {len(dropped)} mục)"
             logger.warning(
-                "以下字幕条目时间轴无效，无法写入SRT（%d 条）：%s",
+                "Các mục phụ đề sau có mốc thời gian không hợp lệ, không thể ghi vào SRT (%d mục): %s",
                 len(dropped), detail,
             )
 
@@ -247,18 +247,18 @@ class SrtTranslator(AiTranslator):
         try:
             reparsed = list(srt.parse(new_srt_content_str)) if new_srt_content_str else []
         except Exception as e:  # noqa: BLE001 - 诊断步骤，不应中断导出
-            logger.error("SRT 导出结果无法回读校验，文件可能不符合SRT规范: %s", e)
+            logger.error("Không thể đọc lại để kiểm tra kết quả xuất SRT, tệp có thể không đúng chuẩn SRT: %s", e)
         else:
             written = sorted((sub.start, sub.end) for sub in composed_subtitles)
             read_back = sorted((sub.start, sub.end) for sub in reparsed)
             if read_back != written:
                 logger.error(
-                    "SRT 导出结果与预期时间窗不一致：预期写入 %d 条，回读 %d 条。",
+                    "Kết quả xuất SRT không khớp khung thời gian dự kiến: dự kiến ghi %d mục, đọc lại được %d mục.",
                     len(written), len(read_back),
                 )
             elif len(written) != cue_count:
                 logger.error(
-                    "SRT 导出结果不完整：原始 %d 条，实际写入 %d 条。",
+                    "Kết quả xuất SRT không đầy đủ: bản gốc %d mục, thực tế ghi %d mục.",
                     cue_count, len(written),
                 )
 
@@ -272,7 +272,7 @@ class SrtTranslator(AiTranslator):
         subtitles, original_texts = self._pre_translate(document)
 
         if not original_texts:
-            self.logger.info("\n文件中没有找到需要翻译的字幕内容。")
+            self.logger.info("\nKhông tìm thấy nội dung phụ đề cần dịch trong tệp.")
             return self
         if self.glossary_agent:
             # 1. 获取增量
@@ -302,7 +302,7 @@ class SrtTranslator(AiTranslator):
         subtitles, original_texts = await asyncio.to_thread(self._pre_translate, document)
 
         if not original_texts:
-            self.logger.info("\n文件中没有找到需要翻译的字幕内容。")
+            self.logger.info("\nKhông tìm thấy nội dung phụ đề cần dịch trong tệp.")
             return self
 
         if self.glossary_agent:

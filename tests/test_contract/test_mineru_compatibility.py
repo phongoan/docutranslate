@@ -402,7 +402,7 @@ def test_cloud_pdf_chunking_handles_unchanged_and_oversized_single_pages(limit_m
         assert chunks == [content]
     else:
         assert [len(PdfReader(io.BytesIO(chunk)).pages) for chunk in chunks] == [1, 1]
-        assert '超过单文件限制' in caplog.text
+        assert 'vượt giới hạn mỗi tệp' in caplog.text
 
 
 @pytest.mark.parametrize("backend", ["hybrid-auto-engine", "pipeline", "standard", "advanced"])

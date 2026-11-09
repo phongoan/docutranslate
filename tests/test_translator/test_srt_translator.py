@@ -134,7 +134,7 @@ def test_short_translation_list_keeps_every_window(caplog):
 
     assert len(result) == 3
     assert [sub.content for sub in result] == ["字幕一", "字幕二", ""]
-    assert "译文条目数与字幕条目数不一致" in caplog.text
+    assert "Số mục bản dịch không khớp số mục phụ đề" in caplog.text
 
 
 def test_long_translation_list_is_reported(caplog):
@@ -143,7 +143,7 @@ def test_long_translation_list_is_reported(caplog):
 
     assert len(result) == 3
     assert [sub.content for sub in result] == ["字幕一", "字幕二", "字幕三"]
-    assert "译文条目数与字幕条目数不一致" in caplog.text
+    assert "Số mục bản dịch không khớp số mục phụ đề" in caplog.text
 
 
 # --------------------------------------------------------------------------
@@ -154,8 +154,8 @@ def test_untranslated_cues_are_reported(caplog):
     with caplog.at_level(logging.WARNING, logger=LOGGER_NAME):
         _translate("replace", ["字幕一", "", "字幕三"])
 
-    assert "译文为空" in caplog.text
-    assert "已按空内容保留其时间窗" in caplog.text
+    assert "có bản dịch trống" in caplog.text
+    assert "khung thời gian được giữ với nội dung trống" in caplog.text
     assert "#2" in caplog.text
 
 
@@ -173,9 +173,9 @@ def test_invalid_time_window_is_dropped_but_reported(caplog):
 
     result = list(srt.parse(output))
     assert len(result) == 2
-    assert "时间轴无效" in caplog.text and "#2" in caplog.text
+    assert "có mốc thời gian không hợp lệ" in caplog.text and "#2" in caplog.text
     # 与原始条目数核对后必须明确报告结果不完整
-    assert "SRT 导出结果不完整：原始 3 条，实际写入 2 条" in caplog.text
+    assert "Kết quả xuất SRT không đầy đủ: bản gốc 3 mục, thực tế ghi 2 mục" in caplog.text
 
 
 def test_blank_source_cue_is_preserved_as_empty(caplog):
@@ -194,8 +194,8 @@ def test_blank_source_cue_is_preserved_as_empty(caplog):
     assert len(result) == 3
     assert _windows(result) == [(2, 3), (4, 5), (6, 7)]
     assert [sub.content for sub in result] == ["字幕一", "", "字幕三"]
-    assert "无法写入SRT" not in caplog.text
-    assert "SRT 导出结果不完整" not in caplog.text
+    assert "không thể ghi vào SRT" not in caplog.text
+    assert "Kết quả xuất SRT không đầy đủ" not in caplog.text
 
 
 def test_complete_result_does_not_warn_about_incompleteness(caplog):
@@ -205,9 +205,9 @@ def test_complete_result_does_not_warn_about_incompleteness(caplog):
 
     assert len(result) == 3
     # 断言真实日志文本，避免断言一个永远不会出现的字符串
-    assert "SRT 导出结果不完整" not in caplog.text
-    assert "SRT 导出结果与预期时间窗不一致" not in caplog.text
-    assert "无法回读校验" not in caplog.text
+    assert "Kết quả xuất SRT không đầy đủ" not in caplog.text
+    assert "Kết quả xuất SRT không khớp khung thời gian dự kiến" not in caplog.text
+    assert "Không thể đọc lại để kiểm tra" not in caplog.text
 
 
 # --------------------------------------------------------------------------
@@ -221,7 +221,7 @@ def test_compensating_errors_are_detected_by_window_comparison(caplog):
     """丢一条 + 译文注入一条时条数相同，只比条数会漏报，必须比时间窗。"""
     translator = _make_translator()
     subtitles = _cues(2)
-    subtitles[1].end = subtitles[1].start  # 第二条时间轴无效 -> 被移除
+    subtitles[1].end = subtitles[1].start  # 第二条có mốc thời gian không hợp lệ -> 被移除
     original = [c.content for c in subtitles]
 
     with caplog.at_level(logging.WARNING, logger=LOGGER_NAME):
@@ -231,7 +231,7 @@ def test_compensating_errors_are_detected_by_window_comparison(caplog):
     # 写入 1 条、回读 2 条：4-5s 真窗口丢失，9-10s 是译文注入的伪条目
     assert len(reparsed) == 2
     assert [(p.start.total_seconds(), p.end.total_seconds()) for p in reparsed] == [(2, 3), (9, 10)]
-    assert "SRT 导出结果与预期时间窗不一致" in caplog.text
+    assert "Kết quả xuất SRT không khớp khung thời gian dự kiến" in caplog.text
 
 
 def test_huge_digit_translation_does_not_break_export(caplog):
@@ -251,7 +251,7 @@ def test_huge_digit_translation_does_not_break_export(caplog):
 
     assert isinstance(output, bytes)
     assert huge in output.decode("utf-8")
-    assert "无法回读校验" in caplog.text
+    assert "Không thể đọc lại để kiểm tra" in caplog.text
 
 
 # --------------------------------------------------------------------------
@@ -316,7 +316,7 @@ def test_invalid_insert_mode_falls_back_to_replace(caplog):
         result = _translate("bogus", ["字幕一", "字幕二", "字幕三"])
 
     assert [sub.content for sub in result] == ["字幕一", "字幕二", "字幕三"]
-    assert caplog.text.count("不正确的SrtTranslatorConfig参数") == 1
+    assert caplog.text.count("Tham số SrtTranslatorConfig không đúng") == 1
 
 
 # --------------------------------------------------------------------------
@@ -414,7 +414,7 @@ def test_output_that_cannot_be_reparsed_does_not_raise(caplog):
 
     assert isinstance(output, bytes)
     assert TRICKY_TRANSLATION in output.decode("utf-8")
-    assert "无法回读校验" in caplog.text
+    assert "Không thể đọc lại để kiểm tra" in caplog.text
 
 
 @pytest.mark.parametrize("use_async", [False, True])

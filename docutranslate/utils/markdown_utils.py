@@ -68,7 +68,7 @@ def uris2placeholder(markdown: str, mask_dict: MaskDict):
 
         # 整个图片都替换为占位符
         mask_dict.set(id, match.group())
-        global_logger.debug("生成图片占位符: ph-%s", id)
+        global_logger.debug("Tạo placeholder hình ảnh: ph-%s", id)
         return f"<ph-{id}>"
 
     # 平衡括号：`(.*?)` 会在 URL 里第一个 `)` 处截断（例如 .../Foo_(bar).png），
@@ -84,7 +84,7 @@ def placeholder2uris(markdown: str, mask_dict: MaskDict):
         uri = mask_dict.get(id)
         if uri is None:
             return match.group()
-        global_logger.debug("还原图片占位符: ph-%s", id)
+        global_logger.debug("Khôi phục placeholder hình ảnh: ph-%s", id)
         return uri
 
     ph_pattern = r"<\s*[pP][hH]\s*-\s*([a-zA-Z0-9]+)\s*>"
@@ -103,9 +103,9 @@ def find_markdown_in_zip(zip_bytes: bytes):
         if len(md_files) == 1:
             return md_files[0]
         elif len(md_files) > 1:
-            raise ValueError("ZIP 中包含多个 Markdown 文件")
+            raise ValueError("ZIP chứa nhiều tệp Markdown")
         else:
-            raise ValueError("ZIP 中没有 Markdown 文件")
+            raise ValueError("ZIP không có tệp Markdown")
 
 
 def embed_inline_image_from_zip(zip_bytes: bytes, filename_in_zip: str | None = None, encoding="utf-8"):
@@ -123,16 +123,16 @@ def embed_inline_image_from_zip(zip_bytes: bytes, filename_in_zip: str | None = 
         str | None: 包含内联图片的Markdown文本内容，如果发生错误则返回None。
     """
     zip_file_bytes = io.BytesIO(zip_bytes)
-    global_logger.debug("正在打开内存中的 ZIP 存档")
+    global_logger.debug("Đang mở kho lưu trữ ZIP trong bộ nhớ")
     with zipfile.ZipFile(zip_file_bytes, 'r') as archive:
-        global_logger.debug("ZIP 存档已打开: entries=%d", len(archive.namelist()))
+        global_logger.debug("Đã mở kho lưu trữ ZIP: entries=%d", len(archive.namelist()))
 
         # --- 新增和修改的逻辑 ---
         target_md_filename = filename_in_zip
 
         # 如果未指定文件名，则自动查找第一个Markdown文件
         if target_md_filename is None:
-            global_logger.debug("正在自动查找第一个 Markdown 文件")
+            global_logger.debug("Đang tự động tìm tệp Markdown đầu tiên")
             found_md = None
             for name in archive.namelist():
                 # 确保它是一个文件（不是目录），并检查扩展名
@@ -142,24 +142,24 @@ def embed_inline_image_from_zip(zip_bytes: bytes, filename_in_zip: str | None = 
 
             if found_md:
                 target_md_filename = found_md
-                global_logger.info("已自动选择 Markdown 文件: %s", target_md_filename)
+                global_logger.info("Đã tự động chọn tệp Markdown: %s", target_md_filename)
             else:
                 global_logger.error(
-                    "ZIP 中未找到 Markdown 文件: entries=%d", len(archive.namelist())
+                    "Không tìm thấy tệp Markdown trong ZIP: entries=%d", len(archive.namelist())
                 )
                 return None
 
         # 统一检查最终确定的文件是否存在于压缩包中
         if target_md_filename not in archive.namelist():
             global_logger.error(
-                "ZIP 中找不到目标 Markdown 文件: filename=%s, entries=%d",
+                "Không tìm thấy tệp Markdown đích trong ZIP: filename=%s, entries=%d",
                 target_md_filename,
                 len(archive.namelist()),
             )
             return None
 
         # --- 后续代码使用 target_md_filename ---
-        global_logger.debug("正在读取 ZIP 内文件: %s", target_md_filename)
+        global_logger.debug("Đang đọc tệp trong ZIP: %s", target_md_filename)
         md_content_bytes = archive.read(target_md_filename)
 
         # 先按调用方声明的编码严格解码（该参数此前只在检测失败时才会用到），
@@ -178,10 +178,10 @@ def embed_inline_image_from_zip(zip_bytes: bytes, filename_in_zip: str | None = 
                 md_content_text = md_content_bytes.decode(detected_encoding)
             except (UnicodeDecodeError, LookupError):
                 global_logger.warning(
-                    "ZIP 内 Markdown 无法用检测到的编码 %s 解码，将替换非法字节", detected_encoding
+                    "Markdown trong ZIP không thể giải mã bằng bảng mã phát hiện được %s, sẽ thay thế các byte không hợp lệ", detected_encoding
                 )
                 md_content_text = md_content_bytes.decode("utf-8", errors="replace")
-        global_logger.debug("Markdown 解码完成: encoding=%s", detected_encoding)
+        global_logger.debug("Giải mã Markdown xong: encoding=%s", detected_encoding)
         # 获取Markdown文件在ZIP包内的基本目录
         base_md_path_in_zip = os.path.dirname(target_md_filename)
 
@@ -210,7 +210,7 @@ def embed_inline_image_from_zip(zip_bytes: bytes, filename_in_zip: str | None = 
 
                 if not mime_type:
                     global_logger.warning(
-                        "无法确定 ZIP 内图片的 MIME 类型，跳过内联: %s",
+                        "Không xác định được kiểu MIME của hình ảnh trong ZIP, bỏ qua nhúng: %s",
                         image_path_in_zip,
                     )
                     return match.group(0)
@@ -220,12 +220,12 @@ def embed_inline_image_from_zip(zip_bytes: bytes, filename_in_zip: str | None = 
                 return new_image_tag
             except KeyError:
                 global_logger.warning(
-                    "ZIP 内图片不存在，保留原始链接: %s", image_path_in_zip
+                    "Hình ảnh trong ZIP không tồn tại, giữ liên kết gốc: %s", image_path_in_zip
                 )
                 return match.group(0)
             except Exception as e_img:
                 global_logger.error(
-                    "处理 ZIP 内图片失败，保留原始链接: path=%s, error=%s",
+                    "Xử lý hình ảnh trong ZIP thất bại, giữ liên kết gốc: path=%s, error=%s",
                     image_path_in_zip,
                     e_img,
                 )
@@ -234,7 +234,7 @@ def embed_inline_image_from_zip(zip_bytes: bytes, filename_in_zip: str | None = 
         image_regex = r"!\[(.*?)\]\((.*?)\)"
         modified_md_content = re.sub(image_regex, replace_image_with_base64, md_content_text)
 
-        global_logger.debug("Markdown 图片内联处理完成")
+        global_logger.debug("Đã xử lý nhúng hình ảnh Markdown xong")
         return modified_md_content
 
 
@@ -290,7 +290,7 @@ def unembed_base64_images_to_zip(markdown: str, markdown_name: str, image_folder
                 return f"![{alt_text}]({url})"
             except Exception as e:
                 global_logger.warning(
-                    "Markdown 中的 base64 图片解码失败: %s", e
+                    "Giải mã hình ảnh base64 trong Markdown thất bại: %s", e
                 )
                 # 如果解码失败，返回原始匹配文本（不做替换），保证文档不丢失内容
                 return match.group(0)

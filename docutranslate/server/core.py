@@ -161,7 +161,7 @@ def _create_default_task_state() -> Dict[str, Any]:
     """Create a new default task state."""
     return {
         "is_processing": False,
-        "status_message": "空闲",
+        "status_message": "Đang chờ",
         "error_flag": False,
         "cancelled": False,
         "download_ready": False,
@@ -210,7 +210,7 @@ def cleanup_stale_temp_dirs(max_age_hours: float = TEMP_CLEANUP_AGE_HOURS) -> in
         except OSError:
             continue
     if removed:
-        global_logger.info("已清理 %d 个残留的临时目录", removed)
+        global_logger.info("Đã dọn %d thư mục tạm còn sót lại", removed)
     return removed
 
 
@@ -278,7 +278,7 @@ class TranslationService:
             self.tasks_state.pop(task_id, None)
             self.tasks_log_queues.pop(task_id, None)
             self.tasks_log_histories.pop(task_id, None)
-            global_logger.info("[%s] 任务记录超出上限，已淘汰并清理临时目录", task_id)
+            global_logger.info("[%s] Số bản ghi tác vụ vượt giới hạn, đã loại bỏ và dọn thư mục tạm", task_id)
 
     def list_tasks(self) -> List[str]:
         """List all task IDs."""
@@ -296,7 +296,7 @@ class TranslationService:
         """Get new logs from the queue."""
         if task_id not in self.tasks_log_queues:
             raise HTTPException(
-                status_code=404, detail=f"找不到任务ID '{task_id}' 的日志队列。"
+                status_code=404, detail=f"Không tìm thấy hàng đợi nhật ký của ID tác vụ '{task_id}'."
             )
         log_queue = self.tasks_log_queues[task_id]
         new_logs = []
@@ -344,7 +344,7 @@ class TranslationService:
         try:
             payload = resolve_auto_payload(payload, original_filename)
         except ValueError as exc:
-            raise HTTPException(status_code=400, detail=f"参数配置错误: {mask_secrets(str(exc))}") from exc
+            raise HTTPException(status_code=400, detail=f"Lỗi cấu hình tham số: {mask_secrets(str(exc))}") from exc
 
         if task_id not in self.tasks_state:
             self.tasks_state[task_id] = _create_default_task_state()
@@ -358,7 +358,7 @@ class TranslationService:
             and not task_state["current_task_ref"].done()
         ):
             raise HTTPException(
-                status_code=429, detail=f"任务ID '{task_id}' 正在进行中，请稍后再试。"
+                status_code=429, detail=f"ID tác vụ '{task_id}' đang được xử lý, vui lòng thử lại sau."
             )
 
         if task_state.get("temp_dir") and os.path.isdir(task_state["temp_dir"]):
@@ -370,7 +370,7 @@ class TranslationService:
         task_state.update(
             {
                 "is_processing": True,
-                "status_message": "任务初始化中...",
+                "status_message": "Đang khởi tạo tác vụ...",
                 "error_flag": False,
                 "cancelled": False,
                 "download_ready": False,
@@ -396,7 +396,7 @@ class TranslationService:
             except asyncio.QueueEmpty:
                 break
 
-        initial_log_msg = f"收到新的翻译请求: {original_filename}"
+        initial_log_msg = f"Nhận được yêu cầu dịch mới: {original_filename}"
         global_logger.info("[%s] %s", task_id, initial_log_msg)
         await log_queue.put(initial_log_msg)
 
@@ -411,18 +411,18 @@ class TranslationService:
             return {
                 "task_started": True,
                 "task_id": task_id,
-                "message": "翻译任务已成功启动，请稍候...",
+                "message": "Tác vụ dịch đã khởi động thành công, vui lòng đợi...",
             }
         except Exception as e:
             task_state.update(
                 {
                     "is_processing": False,
-                    "status_message": f"启动任务失败: {e}",
+                    "status_message": f"Khởi động tác vụ thất bại: {e}",
                     "error_flag": True,
                     "current_task_ref": None,
                 }
             )
-            raise HTTPException(status_code=500, detail=f"启动翻译任务时出错: {mask_secrets(str(e))}")
+            raise HTTPException(status_code=500, detail=f"Lỗi khi khởi động tác vụ dịch: {mask_secrets(str(e))}")
 
     async def _perform_translation(
         self,
@@ -454,9 +454,9 @@ class TranslationService:
         task_logger.addHandler(task_handler)
 
         task_logger.info(
-            f"后台翻译任务开始: 文件 '{original_filename}', 工作流: '{payload.workflow_type}'"
+            f"Tác vụ dịch nền bắt đầu: tệp '{original_filename}', quy trình: '{payload.workflow_type}'"
         )
-        task_state["status_message"] = f"正在处理 '{original_filename}'..."
+        task_state["status_message"] = f"Đang xử lý '{original_filename}'..."
 
         def update_progress(percent: int, message: str):
             task_state["progress_percent"] = percent
@@ -475,7 +475,7 @@ class TranslationService:
         try:
             workflow_class = WORKFLOW_DICT.get(payload.workflow_type)
             if not workflow_class:
-                raise ValueError(f"不支持的工作流类型: '{payload.workflow_type}'")
+                raise ValueError(f"Loại quy trình không được hỗ trợ: '{payload.workflow_type}'")
 
             workflow = self._create_workflow(payload, task_logger, progress_tracker)
             # 保存workflow引用以便在polling时获取实时统计
@@ -486,7 +486,7 @@ class TranslationService:
             workflow.read_bytes(content=file_contents, stem=file_stem, suffix=file_suffix)
             await workflow.translate_async()
 
-            task_logger.info("翻译完成，正在生成临时结果文件...")
+            task_logger.info("Dịch xong, đang tạo tệp kết quả tạm...")
             temp_dir = tempfile.mkdtemp(prefix=f"docutranslate_{task_id}_")
             task_state["temp_dir"] = temp_dir
             downloadable_files = {}
@@ -501,10 +501,10 @@ class TranslationService:
                     )
                 except (httpx.TimeoutException, httpx.RequestError):
                     is_cdn_available = False
-                    task_logger.warning("CDN连接失败，将使用本地JS进行渲染。")
+                    task_logger.warning("Kết nối CDN thất bại, sẽ dùng JS cục bộ để hiển thị.")
             else:
                 is_cdn_available = False
-                task_logger.warning("HTTP客户端未初始化，将使用本地JS进行渲染。")
+                task_logger.warning("Máy khách HTTP chưa được khởi tạo, sẽ dùng JS cục bộ để hiển thị.")
 
             export_map = self._build_export_map(
                 workflow, filename_stem, is_cdn_available
@@ -520,20 +520,20 @@ class TranslationService:
                         "path": file_path,
                         "filename": filename,
                     }
-                    task_logger.info(f"成功生成 {file_type} 文件")
+                    task_logger.info(f"Đã tạo thành công tệp {file_type}")
                 except Exception as export_error:
                     task_logger.error(
-                        f"生成 {file_type} 文件时出错: {export_error}", exc_info=True
+                        f"Tạo tệp {file_type} thất bại: {export_error}", exc_info=True
                     )
 
             if not downloadable_files:
-                raise RuntimeError("所有导出格式均失败，未生成可下载文件")
+                raise RuntimeError("Tất cả định dạng xuất đều thất bại, không tạo được tệp để tải xuống")
 
             attachment_files = {}
             attachment_object = workflow.get_attachment()
             if attachment_object and attachment_object.attachment_dict:
                 task_logger.info(
-                    f"发现 {len(attachment_object.attachment_dict)} 个附件，正在处理..."
+                    f"Phát hiện {len(attachment_object.attachment_dict)} tệp đính kèm, đang xử lý..."
                 )
                 for identifier, doc in attachment_object.attachment_dict.items():
                     try:
@@ -545,11 +545,11 @@ class TranslationService:
                             "filename": attachment_filename,
                         }
                         task_logger.info(
-                            f"成功生成附件 '{identifier}' 文件: {attachment_filename}"
+                            f"Đã tạo thành công tệp đính kèm '{identifier}': {attachment_filename}"
                         )
                     except Exception as attachment_error:
                         task_logger.error(
-                            f"生成附件 '{identifier}' 文件时出错: {attachment_error}",
+                            f"Tạo tệp đính kèm '{identifier}' thất bại: {attachment_error}",
                             exc_info=True,
                         )
 
@@ -558,11 +558,11 @@ class TranslationService:
 
             # 收集统计信息
             statistics = workflow.get_statistics()
-            task_logger.info(f"收集统计信息: {statistics}")
+            task_logger.info(f"Thu thập thông tin thống kê: {statistics}")
 
             task_state.update(
                 {
-                    "status_message": f"翻译完成！用时 {duration:.2f} 秒。",
+                    "status_message": f"Dịch xong! Mất {duration:.2f} giây.",
                     "download_ready": True,
                     "error_flag": False,
                     "progress_percent": 100,
@@ -572,13 +572,13 @@ class TranslationService:
                     "statistics": statistics,
                 }
             )
-            task_logger.info(f"翻译完成，用时 {duration:.2f} 秒。")
+            task_logger.info(f"Dịch xong, mất {duration:.2f} giây.")
 
         except asyncio.CancelledError:
             end_time = time.time()
             duration = end_time - task_state["task_start_time"]
             task_logger.info(
-                f"翻译任务 '{original_filename}' 已被取消 (用时 {duration:.2f} 秒)."
+                f"Tác vụ dịch '{original_filename}' đã bị hủy (mất {duration:.2f} giây)."
             )
             # 尝试获取已有的统计数据
             statistics = {}
@@ -592,14 +592,14 @@ class TranslationService:
             if temp_dir and os.path.isdir(temp_dir):
                 try:
                     shutil.rmtree(temp_dir)
-                    task_logger.info("任务已取消，临时目录已清理")
+                    task_logger.info("Tác vụ đã hủy, đã dọn thư mục tạm")
                 except Exception as cleanup_error:
-                    task_logger.warning(f"取消后清理临时目录失败: {cleanup_error}")
+                    task_logger.warning(f"Dọn thư mục tạm sau khi hủy thất bại: {cleanup_error}")
                 task_state["temp_dir"] = None
                 temp_dir = None
             task_state.update(
                 {
-                    "status_message": f"翻译任务已取消 (用时 {duration:.2f} 秒).",
+                    "status_message": f"Tác vụ dịch đã hủy (mất {duration:.2f} giây).",
                     "error_flag": False,
                     "cancelled": True,
                     "download_ready": False,
@@ -612,7 +612,7 @@ class TranslationService:
         except Exception as e:
             end_time = time.time()
             duration = end_time - task_state["task_start_time"]
-            error_message = f"翻译失败: {e}"
+            error_message = f"Dịch thất bại: {e}"
             task_logger.error(error_message, exc_info=True)
             # 尝试获取已有的统计数据
             statistics = {}
@@ -623,7 +623,7 @@ class TranslationService:
                 pass
             task_state.update(
                 {
-                    "status_message": f"翻译过程中发生错误 (用时 {duration:.2f} 秒): {mask_secrets(str(e))}",
+                    "status_message": f"Đã xảy ra lỗi trong quá trình dịch (mất {duration:.2f} giây): {mask_secrets(str(e))}",
                     "error_flag": True,
                     "download_ready": False,
                     "task_end_time": end_time,
@@ -637,10 +637,10 @@ class TranslationService:
 
             if task_state["error_flag"] and temp_dir and os.path.isdir(temp_dir):
                 shutil.rmtree(temp_dir)
-                task_logger.info(f"因任务失败，已清理临时目录")
+                task_logger.info(f"Do tác vụ thất bại, đã dọn thư mục tạm")
                 task_state["temp_dir"] = None
 
-            task_logger.info(f"后台翻译任务 '{original_filename}' 处理结束。")
+            task_logger.info(f"Tác vụ dịch nền '{original_filename}' đã xử lý xong.")
             task_logger.removeHandler(task_handler)
 
     def _create_workflow(
@@ -756,33 +756,33 @@ class TranslationService:
         """Cancel a running task."""
         task_state = self.tasks_state.get(task_id)
         if not task_state:
-            raise HTTPException(status_code=404, detail=f"找不到任务ID '{task_id}'。")
+            raise HTTPException(status_code=404, detail=f"Không tìm thấy hàng đợi nhật ký của ID tác vụ '{task_id}'.")
         if (
             not task_state
             or not task_state["is_processing"]
             or not task_state["current_task_ref"]
         ):
             raise HTTPException(
-                status_code=400, detail=f"任务ID '{task_id}' 没有正在进行的翻译任务可取消。"
+                status_code=400, detail=f"ID tác vụ '{task_id}' không có tác vụ dịch đang chạy để hủy."
             )
 
         task_to_cancel: Optional[asyncio.Task] = task_state["current_task_ref"]
         if not task_to_cancel or task_to_cancel.done():
             task_state["is_processing"] = False
             task_state["current_task_ref"] = None
-            raise HTTPException(status_code=400, detail="任务已完成或已被取消。")
+            raise HTTPException(status_code=400, detail="Tác vụ đã hoàn thành hoặc đã bị hủy.")
 
-        global_logger.info("[%s] 收到取消翻译任务的请求", task_id)
+        global_logger.info("[%s] Nhận được yêu cầu hủy tác vụ dịch", task_id)
         task_to_cancel.cancel()
-        task_state["status_message"] = "正在取消任务..."
-        return {"cancelled": True, "message": "取消请求已发送。请等待状态更新。"}
+        task_state["status_message"] = "Đang hủy tác vụ..."
+        return {"cancelled": True, "message": "Đã gửi yêu cầu hủy. Vui lòng chờ cập nhật trạng thái."}
 
     async def release_task(self, task_id: str) -> Dict[str, Any]:
         """Release task resources."""
         if task_id not in self.tasks_state:
             return {
                 "released": False,
-                "message": f"找不到任务ID '{task_id}'。"
+                "message": f"Không tìm thấy ID tác vụ '{task_id}'。"
             }
         task_state = self.tasks_state.get(task_id)
         message_parts = []
@@ -793,33 +793,33 @@ class TranslationService:
         ):
             task_ref = task_state["current_task_ref"]
             try:
-                global_logger.info("[%s] 任务仍在进行，释放前尝试取消", task_id)
+                global_logger.info("[%s] Tác vụ vẫn đang chạy, thử hủy trước khi giải phóng", task_id)
                 self.cancel_task(task_id)
-                message_parts.append("任务已被取消。")
+                message_parts.append("Tác vụ đã bị hủy.")
             except HTTPException as e:
                 global_logger.info(
-                    "[%s] 取消步骤已跳过（任务可能已完成）: %s", task_id, e.detail
+                    "[%s] Đã bỏ qua bước hủy (tác vụ có thể đã hoàn thành): %s", task_id, e.detail
                 )
-                message_parts.append(f"任务取消步骤已跳过（可能已完成或取消）。")
+                message_parts.append(f"Đã bỏ qua bước hủy tác vụ (có thể đã hoàn thành hoặc đã hủy).")
             if task_ref is not asyncio.current_task() and not task_ref.done():
                 # Let the worker run its finally block before deleting the
                 # task state and its temporary output directory.
                 done, pending = await asyncio.wait({task_ref}, timeout=5.0)
                 if pending:
-                    global_logger.warning("[%s] 取消后任务清理仍未完成", task_id)
-                    message_parts.append("任务清理未在 5 秒内完成。")
+                    global_logger.warning("[%s] Sau khi hủy, việc dọn dẹp tác vụ vẫn chưa hoàn tất", task_id)
+                    message_parts.append("Việc dọn dẹp tác vụ chưa hoàn tất trong 5 giây.")
 
         if task_state:
             temp_dir = task_state.get("temp_dir")
             if temp_dir and os.path.isdir(temp_dir):
                 try:
                     shutil.rmtree(temp_dir)
-                    message_parts.append("临时文件已清理。")
-                    global_logger.info("[%s] 临时目录已删除: %s", task_id, temp_dir)
+                    message_parts.append("Đã dọn tệp tạm.")
+                    global_logger.info("[%s] Đã xóa thư mục tạm: %s", task_id, temp_dir)
                 except Exception as e:
-                    message_parts.append(f"清理临时文件时出错: {e}。")
+                    message_parts.append(f"Lỗi khi dọn tệp tạm: {e}。")
                     global_logger.error(
-                        "[%s] 删除临时目录失败: path=%s, error=%s",
+                        "[%s] Xóa thư mục tạm thất bại: path=%s, error=%s",
                         task_id,
                         temp_dir,
                         e,
@@ -828,8 +828,8 @@ class TranslationService:
         self.tasks_state.pop(task_id, None)
         self.tasks_log_queues.pop(task_id, None)
         self.tasks_log_histories.pop(task_id, None)
-        global_logger.info("[%s] 资源已成功释放", task_id)
-        message_parts.append(f"任务 '{task_id}' 的资源已释放。")
+        global_logger.info("[%s] Đã giải phóng tài nguyên thành công", task_id)
+        message_parts.append(f"Tác vụ '{task_id}' đã được giải phóng tài nguyên.")
         return {"released": True, "message": " ".join(message_parts)}
 
     async def cleanup_all(self):
@@ -838,7 +838,7 @@ class TranslationService:
         for task_id, task_state in self.tasks_state.items():
             task_ref = task_state.get("current_task_ref")
             if task_ref and not task_ref.done():
-                global_logger.info("[%s] 检测到未完成任务，正在强制取消", task_id)
+                global_logger.info("[%s] Phát hiện tác vụ chưa hoàn thành, đang buộc hủy", task_id)
                 task_ref.cancel()
                 pending_tasks.append(task_ref)
 
@@ -850,10 +850,10 @@ class TranslationService:
             if temp_dir and os.path.isdir(temp_dir):
                 try:
                     shutil.rmtree(temp_dir, ignore_errors=True)
-                    global_logger.info("[%s] 临时目录已清理: %s", task_id, temp_dir)
+                    global_logger.info("[%s] Đã dọn thư mục tạm: %s", task_id, temp_dir)
                 except Exception as e:
                     global_logger.error(
-                        "[%s] 清理临时目录失败: path=%s, error=%s",
+                        "[%s] Dọn thư mục tạm thất bại: path=%s, error=%s",
                         task_id,
                         temp_dir,
                         e,
@@ -863,10 +863,10 @@ class TranslationService:
         if self.httpx_client is not None:
             try:
                 await self.httpx_client.aclose()
-                global_logger.info("[TranslationService] HTTP客户端已关闭")
+                global_logger.info("[TranslationService] Máy khách HTTP đã đóng")
             except Exception as e:
                 global_logger.error(
-                    "[TranslationService] 关闭HTTP客户端失败: %s", e
+                    "[TranslationService] Đóng máy khách HTTP thất bại: %s", e
                 )
             finally:
                 self.httpx_client = None
