@@ -13,7 +13,7 @@ class OllamaAdapter(OpenAIAdapter):
             return reasoning_decision(
                 "mandatory",
                 "effort",
-                warning=f"Ollama 模型 {model_id} 不能完全关闭思考，已使用模型默认行为。",
+                warning=f"Mô hình Ollama {model_id} không thể tắt hoàn toàn suy nghĩ, đã dùng hành vi mặc định của mô hình.",
             )
         return reasoning_decision(
             "unknown",

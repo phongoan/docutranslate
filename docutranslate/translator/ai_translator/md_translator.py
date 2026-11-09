@@ -40,7 +40,7 @@ class MDTranslator(AiTranslator):
                     percent = 30 + int((current / total) * 60)
                     self.progress_tracker.update(
                         percent=percent,
-                        message=f"正在翻译 ({current}/{total})"
+                        message=f"Đang dịch ({current}/{total})"
                     )
 
             agent_config = MDTranslateAgentConfig(custom_prompt=config.custom_prompt,
@@ -78,17 +78,17 @@ class MDTranslator(AiTranslator):
         """
         result = charset_normalizer.from_bytes(document.content).best()
         if result is None:
-            self.logger.error("无法检测Markdown文件编码")
+            self.logger.error("Không thể phát hiện bảng mã của tệp Markdown")
             return ""
         detected_encoding = result.encoding
         try:
             return document.content.decode(detected_encoding)
         except (UnicodeDecodeError, AttributeError) as e:
-            self.logger.error(f"无法使用检测到的编码 {detected_encoding} 解码文件: {e}")
+            self.logger.error(f"Không thể dùng bảng mã đã phát hiện {detected_encoding} để giải mã tệp: {e}")
             return ""
 
     def translate(self, document: MarkdownDocument) -> Self:
-        self.logger.info("正在翻译markdown")
+        self.logger.info("Đang dịch markdown")
         with MDMaskUrisContext(document):
             # 使用新接口，获取 chunks 和对应的 separators
             content_str = self._decode_content(document)
@@ -120,7 +120,7 @@ class MDTranslator(AiTranslator):
                 if self.translate_agent and self.glossary:
                     self.translate_agent.update_glossary_dict(self.glossary.glossary_dict)
 
-            self.logger.info(f"markdown分为{len(chunks)}块 (其中需翻译{len(translate_chunks)}块)")
+            self.logger.info(f"markdown được chia thành {len(chunks)} khối (trong đó cần dịch {len(translate_chunks)} khối)")
 
             if self.translate_agent and translate_chunks:
                 translated_sub_results: list[str] = self.translate_agent.send_chunks(translate_chunks)
@@ -134,11 +134,11 @@ class MDTranslator(AiTranslator):
             content = content.replace(r'\）', r'\)')
 
             document.content = content.encode()
-        self.logger.info("翻译完成")
+        self.logger.info("Dịch hoàn tất")
         return self
 
     async def translate_async(self, document: MarkdownDocument) -> Self:
-        self.logger.info("正在翻译markdown")
+        self.logger.info("Đang dịch markdown")
         with MDMaskUrisContext(document):
             # 异步方法同样更新
             content_str = await asyncio.to_thread(self._decode_content, document)
@@ -170,7 +170,7 @@ class MDTranslator(AiTranslator):
                 if self.translate_agent and self.glossary:
                     self.translate_agent.update_glossary_dict(self.glossary.glossary_dict)
 
-            self.logger.info(f"markdown分为{len(chunks)}块 (其中需翻译{len(translate_chunks)}块)")
+            self.logger.info(f"markdown được chia thành {len(chunks)} khối (trong đó cần dịch {len(translate_chunks)} khối)")
 
             if self.translate_agent and translate_chunks:
                 translated_sub_results: list[str] = await self.translate_agent.send_chunks_async(translate_chunks)
@@ -184,5 +184,5 @@ class MDTranslator(AiTranslator):
                 document.content = content.encode()
 
             await asyncio.to_thread(run)
-        self.logger.info("翻译完成")
+        self.logger.info("Dịch hoàn tất")
         return self

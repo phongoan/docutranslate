@@ -225,5 +225,6 @@
   "docxPasswordLabel": "Mật khẩu tệp (Tùy chọn)",
   "xlsxPasswordLabel": "Mật khẩu tệp (Tùy chọn)",
   "passwordPlaceholder": "Nhập mật khẩu nếu tệp được mã hóa",
-  "passwordHelp": "Nếu tệp được mã hóa, hãy nhập mật khẩu giải mã. Để trống cho tệp chưa mã hóa."
+  "passwordHelp": "Nếu tệp được mã hóa, hãy nhập mật khẩu giải mã. Để trống cho tệp chưa mã hóa.",
+  "settingsTitle": "Cài đặt"
 }

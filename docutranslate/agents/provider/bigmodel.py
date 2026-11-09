@@ -24,6 +24,6 @@ class BigModelAdapter(DeepSeekAdapter):
             return reasoning_decision(
                 "mandatory",
                 "thinking_type",
-                warning=f"模型 {model_id} 为强制思考模型，已忽略关闭请求。",
+                warning=f"Mô hình {model_id} là mô hình bắt buộc suy nghĩ, đã bỏ qua yêu cầu tắt.",
             )
         return super().decide(model_id, intent)

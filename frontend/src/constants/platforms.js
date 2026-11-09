@@ -13,19 +13,19 @@ export const KNOWN_PLATFORMS = [
     {val: "https://api.xiaomimimo.com/v1", label: "MiMo", provider: "mimo"},
     {
         val: "https://dashscope.aliyuncs.com/compatible-mode/v1",
-        label: "阿里云百炼(DashScope)",
+        label: "Alibaba Cloud Bailian (DashScope)",
         provider: "aliyuncs"
     },
     {
         val: "https://ark.cn-beijing.volces.com/api/v3",
-        label: "火山引擎(volces)",
+        label: "Volcano Engine (volces)",
         provider: "volces"
     },
-    {val: "https://api.siliconflow.cn/v1", label: "硅基流动(siliconflow CN)", provider: "siliconflow"},
-    {val: "https://open.bigmodel.cn/api/paas/v4", label: "智谱AI(bigmodel CN)", provider: "bigmodel"},
+    {val: "https://api.siliconflow.cn/v1", label: "SiliconFlow (siliconflow CN)", provider: "siliconflow"},
+    {val: "https://open.bigmodel.cn/api/paas/v4", label: "Zhipu AI (bigmodel CN)", provider: "bigmodel"},
     {val: "https://www.dmxapi.cn/v1", label: "DMXAPI_CN", provider: ""},
     {val: "https://www.dmxapi.com/v1", label: "DMXAPI_GLOBAL", provider: ""},
-    {val: "https://ai.juguang.chat/v1", label: "聚光AI(juguang CN)", provider: ""},
+    {val: "https://ai.juguang.chat/v1", label: "Juguang AI (juguang CN)", provider: ""},
     {val: "https://openrouter.ai/api/v1", label: "OpenRouter", provider: "openrouter"},
     {val: "http://127.0.0.1:4000/v1", label: "LiteLLM", provider: "litellm"},
     {val: "http://127.0.0.1:1234/v1", label: "LM Studio", provider: ""},

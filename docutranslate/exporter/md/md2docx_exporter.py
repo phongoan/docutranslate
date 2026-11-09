@@ -52,10 +52,10 @@ def _md_to_docx_via_pandoc(md_content: str, logger=global_logger) -> bytes:
                 text=True,
                 check=True
             )
-            logger.info(f"Pandoc转换成功: {result.stdout}")
+            logger.info(f"Pandoc chuyển đổi thành công: {result.stdout}")
         except subprocess.CalledProcessError as e:
-            logger.error(f"Pandoc转换失败: {e.stderr}")
-            raise RuntimeError(f"Pandoc转换失败: {e.stderr}")
+            logger.error(f"Pandoc chuyển đổi thất bại: {e.stderr}")
+            raise RuntimeError(f"Pandoc chuyển đổi thất bại: {e.stderr}")
 
         return docx_file.read_bytes()
 
@@ -274,7 +274,7 @@ def _md_to_docx_via_python(md_content: str, logger=global_logger) -> bytes:
     支持：Markdown语法 + 原生HTML表格(<table>)
     """
     if DocxDocument is None:
-        raise RuntimeError("依赖缺失: 未安装 python-docx，无法执行转换。")
+        raise RuntimeError("Thiếu phụ thuộc: chưa cài python-docx, không thể thực hiện chuyển đổi.")
 
     doc = DocxDocument()
 
@@ -496,7 +496,7 @@ class MD2DocxExporter(Exporter):
 
         if engine == "pandoc":
             if not is_pandoc_available():
-                self.logger.warning("Pandoc不可用，回退到纯Python模式")
+                self.logger.warning("Pandoc không khả dụng, chuyển về chế độ Python thuần")
                 docx_bytes = _md_to_docx_via_python(md_content, self.logger)
             else:
                 docx_bytes = _md_to_docx_via_pandoc(md_content, self.logger)

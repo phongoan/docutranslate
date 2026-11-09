@@ -40,7 +40,7 @@ class XlsxTranslator(AiTranslator):
                     percent = 30 + int((current / total) * 60)
                     self.progress_tracker.update(
                         percent=percent,
-                        message=f"正在翻译 ({current}/{total})"
+                        message=f"Đang dịch ({current}/{total})"
                     )
 
             agent_config = SegmentsTranslateAgentConfig(
@@ -110,7 +110,7 @@ class XlsxTranslator(AiTranslator):
             office_file = msoffcrypto.OfficeFile(file_stream)
             if office_file.is_encrypted():
                 if not self.office_password:
-                    raise ValueError("此XLSX文件已加密，但未提供密码。")
+                    raise ValueError("Tệp XLSX này đã được mã hóa nhưng chưa cung cấp mật khẩu.")
                 decrypted = BytesIO()
                 office_file.load_key(password=self.office_password)
                 office_file.decrypt(decrypted)
@@ -246,7 +246,7 @@ class XlsxTranslator(AiTranslator):
                 else:
                     global_regions.append(boundaries)
             except Exception as e:
-                self.logger.warning(f"无法解析区域 '{region}': {e}")
+                self.logger.warning(f"Không thể phân tích vùng '{region}': {e}")
 
         if global_regions:
             target_files = set(sheet_mapping.values())
@@ -449,7 +449,7 @@ class XlsxTranslator(AiTranslator):
                                 elem.clear()
 
         except Exception as e:
-            self.logger.error(f"XML解析失败: {e}", exc_info=True)
+            self.logger.error(f"Phân tích XML thất bại: {e}", exc_info=True)
         return list(texts_to_translate)
 
     def _rebuild_xml_all(self, original_content_bytes: bytes, translation_map: dict) -> bytes:
@@ -562,7 +562,7 @@ class XlsxTranslator(AiTranslator):
                             zf_out.writestr(item, content)
             return output_zip_io.getvalue()
         except Exception as e:
-            self.logger.error(f"XML重构失败: {e}", exc_info=True)
+            self.logger.error(f"Tái tạo XML thất bại: {e}", exc_info=True)
             return original_content_bytes
 
     def translate(self, document: Document) -> Self:
@@ -573,8 +573,8 @@ class XlsxTranslator(AiTranslator):
 
         if not original_texts:
             self.logger.info(
-                "未找到需要翻译的文本 (模式: %s)",
-                "区域" if self.translate_regions else "全文档",
+                "Không tìm thấy văn bản cần dịch (chế độ: %s)",
+                "vùng" if self.translate_regions else "toàn bộ tài liệu",
             )
             return self
 
@@ -607,8 +607,8 @@ class XlsxTranslator(AiTranslator):
 
         if not original_texts:
             self.logger.info(
-                "未找到需要翻译的文本 (模式: %s)",
-                "区域" if self.translate_regions else "全文档",
+                "Không tìm thấy văn bản cần dịch (chế độ: %s)",
+                "vùng" if self.translate_regions else "toàn bộ tài liệu",
             )
             return self
 

@@ -220,7 +220,7 @@ def embed_inline_image_from_zip(zip_bytes: bytes, filename_in_zip: str | None = 
                 return new_image_tag
             except KeyError:
                 global_logger.warning(
-                    "ZIP 内图片不存在，保留原始链接: %s", image_path_in_zip
+                    "ZIP 内图片Không tồn tại công cụ phân tích ，保留原始链接: %s", image_path_in_zip
                 )
                 return match.group(0)
             except Exception as e_img:

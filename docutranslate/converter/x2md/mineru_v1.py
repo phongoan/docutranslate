@@ -90,10 +90,10 @@ class MineruV1:
             raise RuntimeError("MinerU V1 service does not support ZIP output required for Markdown and images")
         if "file_id" not in (features.get("sources") or []):
             raise RuntimeError("MinerU V1 service does not support uploaded file sources")
-        self.logger.info("检测到 MinerU V1，使用 4.x 上传及解析任务协议")
+        self.logger.info("Phát hiện MinerU V1, dùng giao thức tải lên và phân tích tác vụ 4.x")
         if (not self.config.formula_enable or not self.config.table_enable
                 or not self.config.image_analysis or self.config.server_url or self.config.lang_list):
-            self.logger.warning("MinerU 4.x 不接受旧版公式/表格/图像/语言/模型地址参数；这些选项由服务端配置及解析档位决定")
+            self.logger.warning("MinerU 4.x không chấp nhận các tham số cũ về công thức/bảng/hình ảnh/ngôn ngữ/địa chỉ mô hình; các tùy chọn này do cấu hình phía máy chủ và cấp độ phân tích quyết định")
         # Validate page selection before creating a remote resource.
         self.job_payload(document, "pending")
         response = yield self._request("POST", "v1/uploads", json={

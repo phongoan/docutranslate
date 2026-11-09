@@ -12,18 +12,18 @@
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ t('targetLanguageLabel') }}</label>
             <select class="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary" v-model="form.to_lang"
                     @change="saveSetting('translator_to_lang', form.to_lang)">
-                <option value="Simplified Chinese">中文(简体中文)</option>
-                <option value="English">英文(English)</option>
-                <option value="Traditional Chinese">中文(繁體中文)</option>
-                <option value="Spanish">西班牙文(Español)</option>
-                <option value="French">法文(Français)</option>
-                <option value="German">德文(Deutsch)</option>
-                <option value="Japanese">日文(日本語)</option>
-                <option value="Korean">韩文(한국어)</option>
-                <option value="Russian">俄文(Русский)</option>
-                <option value="Portuguese">葡萄牙文(Português)</option>
-                <option value="Arabic">阿拉伯文(العَرَبِيَّة)</option>
-                <option value="Vietnamese">越南文(tiếng Việt)</option>
+                <option value="Simplified Chinese">Tiếng Trung giản thể (简体中文)</option>
+                <option value="English">Tiếng Anh (English)</option>
+                <option value="Traditional Chinese">Tiếng Trung phồn thể (繁體中文)</option>
+                <option value="Spanish">Tiếng Tây Ban Nha (Español)</option>
+                <option value="French">Tiếng Pháp (Français)</option>
+                <option value="German">Tiếng Đức (Deutsch)</option>
+                <option value="Japanese">Tiếng Nhật (日本語)</option>
+                <option value="Korean">Tiếng Hàn (한국어)</option>
+                <option value="Russian">Tiếng Nga (Русский)</option>
+                <option value="Portuguese">Tiếng Bồ Đào Nha (Português)</option>
+                <option value="Arabic">Tiếng Ả Rập (العَرَبِيَّة)</option>
+                <option value="Vietnamese">Tiếng Việt</option>
                 <option value="custom">{{ t('targetLanguageCustom') }}</option>
             </select>
             <div class="mt-2" v-if="form.to_lang === 'custom'">

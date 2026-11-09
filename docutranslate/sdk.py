@@ -398,7 +398,7 @@ class Client:
         # 3. 文件校验
         path_obj = Path(file_path)
         if not path_obj.exists():
-            raise FileNotFoundError(f"文件不存在: {file_path}")
+            raise FileNotFoundError(f"文件Không tồn tại công cụ phân tích : {file_path}")
 
         try:
             payload = resolve_payload(final_params, path_obj.name)

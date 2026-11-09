@@ -12,7 +12,7 @@ class DashScopeAdapter(ReasoningAdapter):
             return reasoning_decision(
                 "mandatory",
                 "boolean",
-                warning=f"模型 {model_id} 是强制思考模型，已忽略关闭请求。",
+                warning=f"Mô hình {model_id} là mô hình bắt buộc suy nghĩ, đã bỏ qua yêu cầu tắt.",
             )
         return reasoning_decision(
             "mandatory" if mandatory else "optional",

@@ -50,7 +50,7 @@ class Epub2HTMLExporter(EpubExporter):
             except KeyError:
                 continue
 
-        raise FileNotFoundError("无法找到 OPF 文件")
+        raise FileNotFoundError("Không tìm thấy tệp OPF")
 
     def _parse_opf(self, opf_content):
         """解析 OPF 文件，获取阅读顺序和文件信息"""
@@ -182,9 +182,9 @@ class Epub2HTMLExporter(EpubExporter):
 
     def _debug_epub_structure(self, zip_file):
         """调试 EPUB 结构，打印所有文件"""
-        global_logger.debug("EPUB 文件结构:")
+        global_logger.debug("Cấu trúc tệp EPUB:")
         for file_info in zip_file.filelist:
-            global_logger.debug("EPUB 文件: %s", file_info.filename)
+            global_logger.debug("Tệp EPUB: %s", file_info.filename)
 
     def export(self, document: Document) -> Document:
         """
@@ -336,9 +336,9 @@ class Epub2HTMLExporter(EpubExporter):
     <title>{document.stem}</title>
 </head>
 <body>
-    <h1>错误：无法提取 EPUB 内容</h1>
-    <p>未能找到有效的 HTML 内容文件。</p>
-    <p>请检查 EPUB 文件格式是否正确。</p>
+    <h1>Lỗi: Không thể trích xuất nội dung EPUB</h1>
+    <p>Không tìm thấy tệp nội dung HTML hợp lệ.</p>
+    <p>Vui lòng kiểm tra định dạng tệp EPUB có đúng không.</p>
 </body>
 </html>"""
                 # print("警告：没有找到任何有效的 HTML 内容")

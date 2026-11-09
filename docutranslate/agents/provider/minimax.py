@@ -21,7 +21,7 @@ class MiniMaxAdapter(ReasoningAdapter):
             return reasoning_decision(
                 "mandatory",
                 "adaptive",
-                warning=f"模型 {model_id} 的思考不能关闭，已使用模型默认行为。",
+                warning=f"Không thể tắt suy nghĩ của mô hình {model_id}, đã dùng hành vi mặc định của mô hình.",
             )
 
         thinking_type = "adaptive" if intent == "enable" else "disabled"

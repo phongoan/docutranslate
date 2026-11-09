@@ -21,13 +21,13 @@ class GoogleAdapter(ReasoningAdapter):
             return reasoning_decision(
                 "unsupported",
                 "none",
-                warning=f"模型 {model_id} 不支持可配置思考模式，已忽略 {intent}。",
+                warning=f"Mô hình {model_id} không hỗ trợ chế độ suy nghĩ có thể cấu hình, đã bỏ qua {intent}.",
             )
         if mandatory and intent == "disable":
             return reasoning_decision(
                 "mandatory",
                 "effort",
-                warning=f"模型 {model_id} 不允许关闭思考，已使用模型默认行为。",
+                warning=f"Mô hình {model_id} không cho phép tắt suy nghĩ, đã dùng hành vi mặc định của mô hình.",
             )
         value = "medium" if intent == "enable" else "none"
         return reasoning_decision(

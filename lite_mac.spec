@@ -14,7 +14,7 @@ try:
     from mcp.server.mcpserver import MCPServer  # noqa: F401
 except ImportError as exc:
     raise SystemExit(
-        "构建缺少可用的 MCP 依赖：请先 `uv sync --extra mcp`（需要 mcp>=2.3.0，见 pyproject）"
+        "Bản build thiếu phụ thuộc MCP: hãy chạy `uv sync --extra mcp` trước (cần mcp>=2.3.0, xem pyproject)"
     ) from exc
 
 hiddenimports = [
